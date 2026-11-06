@@ -20,6 +20,8 @@ import {
   getTopExpenses,
 } from "@/lib/reports/queries";
 import { PAYMENT_MODES } from "@/lib/constants";
+import { computeInsightsForPeriod } from "@/lib/insights/engine";
+import { rankInsights, renderTip } from "@/lib/insights/tips";
 import { PeriodPicker } from "./period-picker";
 import { TrendChart } from "./trend-chart";
 import { Badge } from "@/components/ui/badge";
@@ -78,6 +80,7 @@ export default async function ReportsPage({
     needsVsWants,
     topExpenses,
     trend,
+    insights,
   ] = await Promise.all([
     getPeriodSummary(userId, period),
     getPeriodSummary(userId, previous),
@@ -86,10 +89,12 @@ export default async function ReportsPage({
     getNeedsVsWants(userId, period),
     getTopExpenses(userId, period, 5),
     months.length > 1 ? getMonthlyTrend(userId, period) : Promise.resolve([]),
+    computeInsightsForPeriod(userId, period),
   ]);
 
   const totalExpense = summary.expenseMinor;
   const needWantTotal = needsVsWants.needMinor + needsVsWants.wantMinor;
+  const topTips = rankInsights(insights, 5);
 
   return (
     <div className="flex flex-col gap-6">
@@ -137,6 +142,33 @@ export default async function ReportsPage({
           </CardContent>
         </Card>
       </div>
+
+      {topTips.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Tips for this period</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {topTips.map((insight, i) => (
+              <div key={`${insight.key}-${i}`} className="flex items-start gap-2 text-sm">
+                <Badge
+                  variant={
+                    insight.severity === "critical"
+                      ? "destructive"
+                      : insight.severity === "warning"
+                        ? "secondary"
+                        : "outline"
+                  }
+                  className="mt-0.5 shrink-0"
+                >
+                  {insight.severity}
+                </Badge>
+                <span>{renderTip(insight)}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {months.length > 1 && trend.length > 0 && (
         <Card>

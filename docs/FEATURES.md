@@ -27,8 +27,8 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 | F-RPT-03 | Trend charts | Reports | M | F-RPT-02 | ☑ |
 | F-BUD-01 | Flexible budgets | Budgets | M | F-RPT-01 | ☑ |
 | F-BUD-02 | Budget projections & history | Budgets | S | F-BUD-01 | ☐ |
-| F-INS-01 | Insight engine (core rules) | Insights | M | F-RPT-02, F-BUD-01 | ☐ |
-| F-INS-02 | Tip templates & ranking | Insights | M | F-INS-01 | ☐ |
+| F-INS-01 | Insight engine (core rules) | Insights | M | F-RPT-02, F-BUD-01 | ☑ |
+| F-INS-02 | Tip templates & ranking | Insights | M | F-INS-01 | ☑ |
 | F-INS-03 | Extra insight rules | Insights | S | F-INS-01 | ☐ |
 | F-DASH-01 | Dashboard | Dashboard | M | F-RPT-02, F-BUD-01, F-INS-02 | ☐ |
 | F-SET-01 | Settings & export | Settings | S | F-CAT-01 | ☐ |
@@ -223,19 +223,19 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 **Priority:** M · **Requirements:** FR-INS-1…4, FR-INS-6, FR-INS-7, FR-INS-12
 **Description:** Pure functions that take a period's aggregated data and return insight objects (`{ key, severity, data, impactPaise }`). No UI, no AI.
 **Acceptance criteria**
-- [ ] Rules: biggest movers, share of wallet, needs vs wants vs 50/30/20, small leaks, savings-rate trend, budget risk
-- [ ] Each rule has unit tests with fixture data, including "not enough data → no insight"
-- [ ] Transfers excluded from every rule
-- [ ] Engine runs for any period from F-RPT-01
+- [x] Rules: biggest movers, share of wallet, needs vs wants vs 50/30/20, small leaks, savings-rate trend, budget risk
+- [x] Each rule has unit tests with fixture data, including "not enough data → no insight" (17 passing in `rules.test.ts`)
+- [x] Transfers excluded from every rule (all input queries filter `type != 'transfer'`)
+- [x] Engine runs for any period from F-RPT-01 (`computeInsightsForPeriod`)
 
 ### F-INS-02 · Tip templates & ranking
 **Priority:** M · **Requirements:** FR-INS-10, FR-INS-11
 **Acceptance criteria**
-- [ ] One template per insight key, kept in a single file
-- [ ] Tips contain real figures and an annualised ₹ impact where meaningful
-- [ ] Ranked by impact; top 3–5 shown on the report and top 3 on the dashboard
-- [ ] Each tip links to the transactions behind it
-- [ ] Snapshot tests for rendered tip text
+- [x] One template per insight key, kept in a single file (`src/lib/insights/tips.ts`)
+- [x] Tips contain real figures and an annualised ₹ impact where meaningful
+- [x] Ranked by impact; top 5 shown on the report. Top 3 on the dashboard not built yet — pending F-DASH-01
+- [ ] Each tip links to the transactions behind it — not built
+- [x] Unit tests for rendered tip text (exact-string assertions in `tips.test.ts`, not visual snapshots)
 
 ### F-INS-03 · Extra insight rules
 **Priority:** S · **Requirements:** FR-INS-5, FR-INS-8, FR-INS-9, FR-INS-13

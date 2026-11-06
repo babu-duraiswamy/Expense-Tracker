@@ -53,6 +53,10 @@ function daysBetweenInclusive(start: string, end: string): number {
   return Math.round((toUTCDate(end).getTime() - toUTCDate(start).getTime()) / 86_400_000) + 1;
 }
 
+export function periodLengthDays(period: Period): number {
+  return daysBetweenInclusive(period.start, period.end);
+}
+
 function lastDayOfMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }

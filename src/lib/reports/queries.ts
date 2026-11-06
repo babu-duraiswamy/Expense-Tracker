@@ -153,3 +153,35 @@ export async function getMonthlyTrend(userId: string, period: Period): Promise<M
     expenseMinor: Number(rows.find((r) => r.month === month && r.type === "expense")?.total ?? 0),
   }));
 }
+
+export type SmallTransactionGroup = { categoryName: string; count: number; totalMinor: number };
+
+/** Expense categories with several small transactions (F-INS-01 small-leaks input). */
+export async function getSmallTransactionGroups(
+  userId: string,
+  period: Period,
+  maxAmountMinor = 30_000,
+): Promise<SmallTransactionGroup[]> {
+  const rows = await db
+    .select({
+      categoryName: schema.categories.name,
+      count: sql<string>`count(*)`,
+      total: sql<string>`sum(${schema.transactions.amountMinor})`,
+    })
+    .from(schema.transactions)
+    .innerJoin(schema.categories, eq(schema.transactions.categoryId, schema.categories.id))
+    .where(
+      and(
+        periodConditions(userId, period),
+        eq(schema.transactions.type, "expense"),
+        lte(schema.transactions.amountMinor, maxAmountMinor),
+      ),
+    )
+    .groupBy(schema.categories.name);
+
+  return rows.map((r) => ({
+    categoryName: r.categoryName,
+    count: Number(r.count),
+    totalMinor: Number(r.total),
+  }));
+}
