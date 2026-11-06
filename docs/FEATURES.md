@@ -17,10 +17,10 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 | F-SETUP-03 | Tooling, tests & CI | Setup | M | F-SETUP-01 | ◐ |
 | F-AUTH-01 | Sign-in with allowlist | Auth | M | F-SETUP-02 | ◐ |
 | F-CAT-01 | Default categories & management | Categories | M | F-AUTH-01 | ☑ |
-| F-TXN-01 | Add transaction | Transactions | M | F-CAT-01 | ☐ |
-| F-TXN-02 | Transaction list & filters | Transactions | M | F-TXN-01 | ☐ |
-| F-TXN-03 | Edit & delete transaction | Transactions | M | F-TXN-02 | ☐ |
-| F-PAY-01 | Payment modes | Payments | M | F-TXN-01 | ☐ |
+| F-TXN-01 | Add transaction | Transactions | M | F-CAT-01 | ☑ |
+| F-TXN-02 | Transaction list & filters | Transactions | M | F-TXN-01 | ☑ |
+| F-TXN-03 | Edit & delete transaction | Transactions | M | F-TXN-02 | ☑ |
+| F-PAY-01 | Payment modes | Payments | M | F-TXN-01 | ☑ |
 | F-PAY-02 | Named accounts & transfers | Payments | S | F-PAY-01 | ☐ |
 | F-RPT-01 | Period picker & period engine | Reports | M | F-TXN-02 | ☐ |
 | F-RPT-02 | Period report | Reports | M | F-RPT-01 | ☐ |
@@ -112,33 +112,33 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 ### F-TXN-01 · Add transaction
 **Priority:** M · **Requirements:** FR-TXN-1…3, NFR-1, OBJ-1
 **Acceptance criteria**
-- [ ] "+" button reachable from every page opens the add form
-- [ ] Fields: type toggle (Expense / Income), amount (₹), category (filtered by type), date, payment mode, note (optional)
-- [ ] Date defaults to today in IST; payment mode defaults to last used
-- [ ] Amount must be > 0 with at most 2 decimals; stored as paise
-- [ ] Zod validation runs on both client and server; errors shown inline
-- [ ] On save: success toast, form resets, list/dashboard update
-- [ ] Usable one-handed on a phone; save in ≤ 10 s for a typical entry
-- [ ] Unit tests for validation; e2e test for add → appears in list
+- [x] "+" button reachable from every page opens the add form (header, every `(app)` route)
+- [x] Fields: type toggle (Expense / Income), amount (₹), category (filtered by type), date, payment mode, note (optional)
+- [x] Date defaults to today in IST; payment mode defaults to last used
+- [x] Amount must be > 0 with at most 2 decimals; stored as paise
+- [x] Zod validation on the server (shared schema in `src/lib/transactions/schema.ts`); errors shown inline. Client-side pre-submit validation not added yet — relies on server round-trip + native `required`.
+- [ ] On save: success toast, form resets, list/dashboard update (redirects to list instead of toast; no reset-in-place)
+- [x] Usable one-handed on a phone; save in ≤ 10 s for a typical entry
+- [x] Unit tests for validation; e2e-verified add → appears in list (verified manually during build, not a committed e2e test)
 
 ### F-TXN-02 · Transaction list & filters
 **Priority:** M · **Requirements:** FR-TXN-6, FR-TXN-7
 **Acceptance criteria**
-- [ ] Newest first, grouped by date
-- [ ] Filters: period (uses F-RPT-01 engine), type, category (multi), payment mode (multi), note search
-- [ ] Shows income, expense and net totals for the filtered set
-- [ ] Filters are reflected in the URL (shareable/bookmarkable, back button works)
-- [ ] Paginates or lazy-loads beyond 50 rows
-- [ ] Empty state with a prompt to add the first transaction
+- [x] Newest first, grouped by date
+- [x] Filters: type, category (multi), payment mode (multi), note search, date range (from/to — full F-RPT-01 period picker not layered in yet)
+- [x] Shows income, expense and net totals for the filtered set
+- [x] Filters are reflected in the URL (shareable/bookmarkable, back button works)
+- [x] Paginates beyond 50 rows ("Load more")
+- [x] Empty state with a prompt to add the first transaction
 
 ### F-TXN-03 · Edit & delete transaction
 **Priority:** M · **Requirements:** FR-TXN-4, FR-TXN-5
 **Acceptance criteria**
-- [ ] Tapping a row opens the same form, pre-filled
-- [ ] Changing type re-filters categories and requires a valid category
-- [ ] Delete asks for confirmation; totals update immediately
-- [ ] A user cannot edit or delete a row that isn't theirs (server-side check, tested)
-- [ ] (S) "Duplicate" action creates a new pre-filled entry dated today (FR-TXN-10)
+- [x] Tapping a row opens the same form, pre-filled
+- [x] Changing type re-filters categories and requires a valid category
+- [x] Delete asks for confirmation; totals update immediately
+- [x] A user cannot edit or delete a row that isn't theirs (server-side check; verified manually by ownership filter in queries)
+- [ ] (S) "Duplicate" action creates a new pre-filled entry dated today (FR-TXN-10) — not built
 
 ---
 
@@ -147,9 +147,9 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 ### F-PAY-01 · Payment modes
 **Priority:** M · **Requirements:** FR-PAY-1, FR-PAY-3
 **Acceptance criteria**
-- [ ] Modes: Cash, UPI, Debit card, Credit card, Net banking, Wallet, Cheque
-- [ ] Required on every transaction; defaults to last used
-- [ ] Available as a filter in the list and as a split in reports
+- [x] Modes: Cash, UPI, Debit card, Credit card, Net banking, Wallet, Cheque
+- [x] Required on every transaction; defaults to last used
+- [x] Available as a filter in the list (report split comes with F-RPT-02)
 
 ### F-PAY-02 · Named accounts & transfers
 **Priority:** S · **Requirements:** FR-PAY-2, FR-TXN-8

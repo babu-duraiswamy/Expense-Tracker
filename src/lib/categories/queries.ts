@@ -53,6 +53,24 @@ export async function listCategories(userId: string): Promise<Category[]> {
     );
 }
 
+/** Non-archived categories of one kind, for the transaction entry picker (F-TXN-01). */
+export async function listActiveCategories(
+  userId: string,
+  kind: "expense" | "income",
+): Promise<Category[]> {
+  return db
+    .select()
+    .from(schema.categories)
+    .where(
+      and(
+        eq(schema.categories.userId, userId),
+        eq(schema.categories.kind, kind),
+        eq(schema.categories.isArchived, false),
+      ),
+    )
+    .orderBy(asc(schema.categories.sortOrder), asc(schema.categories.name));
+}
+
 export async function createCategory(
   userId: string,
   input: { name: string; kind: "expense" | "income"; needOrWant?: "need" | "want" },

@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { PlusIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/app-nav";
 import { UserMenu } from "@/components/user-menu";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -18,6 +21,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="min-w-0 overflow-x-auto">
               <AppNav />
             </div>
+            <Link
+              href="/transactions/new"
+              aria-label="Add transaction"
+              className={cn(buttonVariants({ size: "icon" }), "shrink-0")}
+            >
+              <PlusIcon />
+            </Link>
             {session?.user?.email && <UserMenu email={session.user.email} />}
           </div>
         </div>

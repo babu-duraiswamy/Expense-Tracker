@@ -14,11 +14,11 @@ const QUICK_LINKS = [
     status: "ready" as const,
   },
   {
-    href: "#",
+    href: "/transactions",
     icon: ReceiptTextIcon,
     title: "Transactions",
     description: "Log income and expenses.",
-    status: "soon" as const,
+    status: "ready" as const,
   },
   {
     href: "#",
