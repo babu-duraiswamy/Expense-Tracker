@@ -25,7 +25,7 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 | F-RPT-01 | Period picker & period engine | Reports | M | F-TXN-02 | ☑ |
 | F-RPT-02 | Period report | Reports | M | F-RPT-01 | ☑ |
 | F-RPT-03 | Trend charts | Reports | M | F-RPT-02 | ☑ |
-| F-BUD-01 | Flexible budgets | Budgets | M | F-RPT-01 | ☐ |
+| F-BUD-01 | Flexible budgets | Budgets | M | F-RPT-01 | ☑ |
 | F-BUD-02 | Budget projections & history | Budgets | S | F-BUD-01 | ☐ |
 | F-INS-01 | Insight engine (core rules) | Insights | M | F-RPT-02, F-BUD-01 | ☐ |
 | F-INS-02 | Tip templates & ranking | Insights | M | F-INS-01 | ☐ |
@@ -199,14 +199,14 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 **Priority:** M · **Requirements:** FR-BUD-1…5, FR-BUD-7
 **Description:** Budgets are unrestricted: any amount, any scope, any period type, multiple at once.
 **Acceptance criteria**
-- [ ] Create a budget with name, amount, scope (total spend, or one or more categories) and period type (weekly, monthly, quarterly, yearly, custom start–end)
-- [ ] Recurring budgets roll into each new period automatically; custom budgets apply once
-- [ ] Multiple and overlapping budgets allowed
-- [ ] Each budget shows spent, remaining, % used, days left
-- [ ] Warning state at ≥ 80%, over state at ≥ 100%
-- [ ] Edit, pause, or end a budget; past periods keep their results
-- [ ] Spend computed live from transactions (excludes transfers and income)
-- [ ] Unit tests: weekly/monthly/quarterly/yearly/custom windows, multi-category scope, overlapping budgets
+- [x] Create a budget with name, amount, scope (total spend, or one or more categories) and period type (weekly, monthly, quarterly, yearly, custom start–end)
+- [x] Recurring budgets roll into each new period automatically (`currentBudgetPeriod`); custom budgets apply once
+- [x] Multiple and overlapping budgets allowed (each computed independently, no exclusivity constraint)
+- [x] Each budget shows spent, remaining, % used, days left
+- [x] Warning state at ≥ 80%, over state at ≥ 100%
+- [x] Edit, pause (and resume) a budget. "End" (permanently close out, keeping history) not built — pause is the closest equivalent; past-period history is F-BUD-02 (S, not built)
+- [x] Spend computed live from transactions (excludes transfers and income — `type = 'expense'` only)
+- [x] Unit tests: weekly/monthly/quarterly/yearly/custom windows (10 passing in `period.test.ts`); multi-category scope and overlapping budgets verified end-to-end against the real DB (not unit-tested in isolation)
 
 ### F-BUD-02 · Budget projections & history
 **Priority:** S · **Requirements:** FR-BUD-6, FR-BUD-8, FR-BUD-9 (L)

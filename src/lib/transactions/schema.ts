@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { toPaise } from "@/lib/money";
+import { amountMinorSchema } from "@/lib/money-schema";
 
 export const transactionTypeSchema = z.enum(["expense", "income"]);
 
@@ -12,17 +12,6 @@ export const paymentModeSchema = z.enum([
   "wallet",
   "cheque",
 ]);
-
-const amountMinorSchema = z.string().transform((val, ctx) => {
-  try {
-    const paise = toPaise(val);
-    if (paise <= 0) throw new Error("must be positive");
-    return paise;
-  } catch {
-    ctx.addIssue({ code: "custom", message: "Enter a valid amount greater than 0" });
-    return z.NEVER;
-  }
-});
 
 const occurredOnSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date");
 

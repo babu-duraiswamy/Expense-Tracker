@@ -5,34 +5,40 @@ import { formatINR } from "@/lib/money";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const QUICK_LINKS = [
+const QUICK_LINKS: {
+  href: string;
+  icon: typeof TagsIcon;
+  title: string;
+  description: string;
+  status: "ready" | "soon";
+}[] = [
   {
     href: "/categories",
     icon: TagsIcon,
     title: "Categories",
     description: "Manage expense and income categories.",
-    status: "ready" as const,
+    status: "ready",
   },
   {
     href: "/transactions",
     icon: ReceiptTextIcon,
     title: "Transactions",
     description: "Log income and expenses.",
-    status: "ready" as const,
+    status: "ready",
   },
   {
-    href: "#",
+    href: "/budgets",
     icon: WalletIcon,
     title: "Budgets",
     description: "Set flexible budgets per category or period.",
-    status: "soon" as const,
+    status: "ready",
   },
   {
     href: "/reports",
     icon: TargetIcon,
     title: "Reports",
     description: "See where your money goes, for any period.",
-    status: "ready" as const,
+    status: "ready",
   },
 ];
 
