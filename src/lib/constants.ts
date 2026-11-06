@@ -3,6 +3,8 @@
 export const TIMEZONE = "Asia/Kolkata";
 export const CURRENCY = "INR";
 
+export const NEED_OR_WANT_LABELS = { need: "Need", want: "Want" } as const;
+
 export const PAYMENT_MODES = [
   { value: "cash", label: "Cash" },
   { value: "upi", label: "UPI" },
