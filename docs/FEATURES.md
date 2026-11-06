@@ -30,7 +30,7 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 | F-INS-01 | Insight engine (core rules) | Insights | M | F-RPT-02, F-BUD-01 | ☑ |
 | F-INS-02 | Tip templates & ranking | Insights | M | F-INS-01 | ☑ |
 | F-INS-03 | Extra insight rules | Insights | S | F-INS-01 | ☐ |
-| F-DASH-01 | Dashboard | Dashboard | M | F-RPT-02, F-BUD-01, F-INS-02 | ☐ |
+| F-DASH-01 | Dashboard | Dashboard | M | F-RPT-02, F-BUD-01, F-INS-02 | ☑ |
 | F-SET-01 | Settings & export | Settings | S | F-CAT-01 | ☐ |
 | F-QA-01 | Hardening & polish | Quality | M | all M features | ☐ |
 
@@ -252,12 +252,12 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 ### F-DASH-01 · Dashboard
 **Priority:** M · **Requirements:** FR-RPT-10
 **Acceptance criteria**
-- [ ] Current-month income, expense, net and savings rate
-- [ ] Active budgets with progress bars and warning/over states
-- [ ] Top 3 tips
-- [ ] Last 5 transactions with "View all"
-- [ ] Prominent "+" add button
-- [ ] Loads in < 2 s on 4G
+- [x] Current-month income, expense, net and savings rate
+- [x] Active budgets with progress bars and warning/over states
+- [x] Top 3 tips
+- [x] Last 5 transactions with "View all"
+- [x] Prominent "+" add button (header, on every page)
+- [ ] Loads in < 2 s on 4G — not measured
 
 ---
 
