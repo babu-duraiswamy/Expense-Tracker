@@ -28,10 +28,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user }) {
-      if (!user.email) return false;
-      await ensureUser(user.email);
-      return true;
+    async jwt({ token, user }) {
+      if (user?.email) {
+        const dbUser = await ensureUser(user.email);
+        token.userId = dbUser.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token.userId) {
+        session.user.id = token.userId as string;
+      }
+      return session;
     },
   },
 });

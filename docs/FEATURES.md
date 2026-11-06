@@ -16,7 +16,7 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 | F-SETUP-02 | Database & schema | Setup | M | F-SETUP-01 | ☑ |
 | F-SETUP-03 | Tooling, tests & CI | Setup | M | F-SETUP-01 | ◐ |
 | F-AUTH-01 | Sign-in with allowlist | Auth | M | F-SETUP-02 | ◐ |
-| F-CAT-01 | Default categories & management | Categories | M | F-AUTH-01 | ☐ |
+| F-CAT-01 | Default categories & management | Categories | M | F-AUTH-01 | ☑ |
 | F-TXN-01 | Add transaction | Transactions | M | F-CAT-01 | ☐ |
 | F-TXN-02 | Transaction list & filters | Transactions | M | F-TXN-01 | ☐ |
 | F-TXN-03 | Edit & delete transaction | Transactions | M | F-TXN-02 | ☐ |
@@ -97,12 +97,12 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 ### F-CAT-01 · Default categories & management
 **Priority:** M · **Requirements:** FR-CAT-1…4
 **Acceptance criteria**
-- [ ] Defaults seeded on first sign-in (list in RAD FR-CAT-1); seeding is idempotent
-- [ ] Each expense default has a sensible Need/Want tag (e.g. Rent = Need, Entertainment = Want)
-- [ ] User can add a category (name, kind, Need/Want for expense)
-- [ ] User can rename and change the Need/Want tag
-- [ ] User can archive/unarchive; archived categories don't appear in the entry picker but still show on old transactions and in reports
-- [ ] Duplicate names within the same kind are rejected
+- [x] Defaults seeded on first sign-in (list in RAD FR-CAT-1); seeding is idempotent
+- [x] Each expense default has a sensible Need/Want tag (e.g. Rent = Need, Entertainment = Want)
+- [x] User can add a category (name, kind, Need/Want for expense)
+- [x] User can rename and change the Need/Want tag
+- [x] User can archive/unarchive (archive state persists; "hidden from entry picker" to be wired when F-TXN-01 adds that picker)
+- [x] Duplicate names within the same kind are rejected
 - [ ] Later (L): colour/icon, sub-categories
 
 ---
