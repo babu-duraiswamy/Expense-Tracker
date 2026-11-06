@@ -189,10 +189,7 @@ export const budgets = pgTable(
   (t) => [
     index("budgets_user_idx").on(t.userId),
     check("budgets_amount_positive", sql`${t.amountMinor} > 0`),
-    check(
-      "budgets_custom_needs_end",
-      sql`${t.periodType} <> 'custom' OR ${t.endDate} IS NOT NULL`,
-    ),
+    check("budgets_custom_needs_end", sql`${t.periodType} <> 'custom' OR ${t.endDate} IS NOT NULL`),
   ],
 );
 

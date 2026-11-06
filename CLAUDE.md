@@ -35,7 +35,7 @@ drizzle/          generated migrations (never hand-edit)
 2. **Dates are IST** (`Asia/Kolkata`). `occurredOn` is a `"YYYY-MM-DD"` date string, not a timestamp. Period boundaries are computed in IST. Financial year = 1 Apr – 31 Mar.
 3. **Ownership on every query and mutation.** Every read/write filters by the signed-in user's `userId`, checked on the server. Never trust an ID from the client alone.
 4. **Transfers are not income or expense.** Exclude `type = 'transfer'` from totals, budgets and insights. Paying a credit card bill is a transfer.
-5. **Auth on everything** except the sign-in page. Only emails in `ALLOWED_EMAILS` may sign in.
+5. **Auth on everything** except `/login`. Phase A: single user via `AUTH_USER_EMAIL` + `AUTH_PASSWORD_HASH` (Credentials provider). Phase B (later): Google provider added alongside, restricted to `ALLOWED_EMAILS`.
 6. **Validation with Zod**, one schema shared by client and server.
 7. **Schema changes only via migrations** (`db:generate` → review SQL → `db:migrate`). Never edit files in `drizzle/`.
 8. **No secrets in code.** Use env vars; update `.env.example` when adding one.

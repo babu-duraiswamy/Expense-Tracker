@@ -75,8 +75,8 @@ Priority: **M** = must have (v1), **S** = should have (v1 if time allows), **L**
 ### 4.1 Authentication (AUTH)
 | ID | Requirement | Priority |
 |---|---|---|
-| FR-AUTH-1 | The system shall allow sign-in with Google OAuth. | M |
-| FR-AUTH-2 | The system shall allow only email addresses on a configured allowlist (env var) to sign in; all others see an "access denied" page. | M |
+| FR-AUTH-1 | The system shall allow sign-in. **Phase A (now):** email + password (single user; password hashed, never stored in plaintext). **Phase B (later):** Google OAuth added alongside, still restricted by FR-AUTH-2. | M |
+| FR-AUTH-2 | The system shall allow only the configured user (Phase A: `AUTH_USER_EMAIL`; Phase B: email allowlist, env var) to sign in; all others see an "access denied" page. | M |
 | FR-AUTH-3 | The system shall protect every page and API route; unauthenticated requests are redirected to sign-in (pages) or receive 401 (API). | M |
 | FR-AUTH-4 | The system shall create the user record on first successful sign-in and seed default categories. | M |
 | FR-AUTH-5 | The user shall be able to sign out. | M |

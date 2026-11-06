@@ -12,10 +12,10 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 
 | ID | Feature | Epic | Priority | Depends on | Status |
 |---|---|---|---|---|---|
-| F-SETUP-01 | Project skeleton & deploy | Setup | M | — | ☐ |
-| F-SETUP-02 | Database & schema | Setup | M | F-SETUP-01 | ☐ |
-| F-SETUP-03 | Tooling, tests & CI | Setup | M | F-SETUP-01 | ☐ |
-| F-AUTH-01 | Google sign-in with allowlist | Auth | M | F-SETUP-02 | ☐ |
+| F-SETUP-01 | Project skeleton & deploy | Setup | M | — | ◐ |
+| F-SETUP-02 | Database & schema | Setup | M | F-SETUP-01 | ☑ |
+| F-SETUP-03 | Tooling, tests & CI | Setup | M | F-SETUP-01 | ◐ |
+| F-AUTH-01 | Sign-in with allowlist | Auth | M | F-SETUP-02 | ◐ |
 | F-CAT-01 | Default categories & management | Categories | M | F-AUTH-01 | ☐ |
 | F-TXN-01 | Add transaction | Transactions | M | F-CAT-01 | ☐ |
 | F-TXN-02 | Transaction list & filters | Transactions | M | F-TXN-01 | ☐ |
@@ -44,45 +44,50 @@ Companion to `RAD.md`. Each feature lists its requirements (FR-IDs), priority, d
 **Priority:** M · **Requirements:** NFR-7, NFR-10
 **Description:** Create the Next.js (App Router, TypeScript strict) + Tailwind + shadcn/ui project, push to GitHub, connect to Vercel.
 **Acceptance criteria**
-- [ ] `npm run dev` serves a placeholder home page locally
+- [x] `npm run dev` serves a placeholder home page locally
 - [ ] Repo on GitHub; every push to `main` deploys to Vercel; PRs get preview URLs
-- [ ] TypeScript `strict: true`
-- [ ] README explains how to run locally
+- [x] TypeScript `strict: true`
+- [x] README explains how to run locally
 
 ### F-SETUP-02 · Database & schema
 **Priority:** M · **Requirements:** RAD §6.3, NFR-5
 **Description:** Create a Neon project with `dev` and `main` branches. Define the v1 schema in Drizzle (`users`, `accounts`, `categories`, `transactions`, `budgets`, `budget_categories`) and generate the first migration.
 **Acceptance criteria**
-- [ ] Migration applies cleanly to both Neon branches
-- [ ] Money columns are `bigint` paise; `occurred_on` is a `date`
-- [ ] Enums/check constraints for `type`, `payment_mode`, `kind`, `period_type`, `scope`
-- [ ] Indexes on (`user_id`, `occurred_on`) and (`user_id`, `category_id`, `occurred_on`)
-- [ ] Nullable investment columns are **not** added yet (documented for later)
-- [ ] `DATABASE_URL` read from env; local `.env.local` git-ignored
+- [x] Migration applies cleanly to the Neon `dev` branch (applies to `main`/production at deploy time)
+- [x] Money columns are `bigint` paise; `occurred_on` is a `date`
+- [x] Enums/check constraints for `type`, `payment_mode`, `kind`, `period_type`, `scope`
+- [x] Indexes on (`user_id`, `occurred_on`) and (`user_id`, `category_id`, `occurred_on`)
+- [x] Nullable investment columns are **not** added yet (documented for later)
+- [x] `DATABASE_URL` read from env; local `.env.local` git-ignored
 
 ### F-SETUP-03 · Tooling, tests & CI
 **Priority:** M · **Requirements:** NFR-7, NFR-8
 **Acceptance criteria**
-- [ ] ESLint + Prettier configured; `npm run lint` passes
-- [ ] Vitest set up with one passing sample test
-- [ ] Playwright set up with one smoke test (home page loads)
-- [ ] GitHub Actions runs lint, type-check and unit tests on every PR
-- [ ] Money helpers: `toPaise("249.50") → 24950`, `formatINR(12345600) → "₹1,23,456.00"`, with unit tests
+- [x] ESLint + Prettier configured; `npm run lint` passes
+- [x] Vitest set up with one passing sample test
+- [x] Playwright set up with one smoke test (home page loads)
+- [x] GitHub Actions runs lint, type-check and unit tests on every PR
+- [x] Money helpers: `toPaise("249.50") → 24950`, `formatINR(12345600) → "₹1,23,456.00"`, with unit tests
 
 ---
 
 ## Epic: Auth
 
-### F-AUTH-01 · Google sign-in with allowlist
+### F-AUTH-01 · Sign-in with allowlist
 **Priority:** M · **Requirements:** FR-AUTH-1…5, NFR-3
-**Description:** Auth.js with Google provider. Only emails in `ALLOWED_EMAILS` may sign in.
-**Acceptance criteria**
+**Description:** Auth.js, built in two phases. **Phase A:** Credentials provider — single user, email + password checked against `AUTH_USER_EMAIL` / `AUTH_PASSWORD_HASH` (scrypt hash) env vars. **Phase B (later):** add the Google provider alongside, restricted to `ALLOWED_EMAILS`.
+**Acceptance criteria — Phase A (email + password)**
+- [x] Sign-in with the configured email + password works
+- [x] Wrong email or password shows an inline error; no session is created
+- [x] Every page except `/login` redirects to `/login` when signed out
+- [ ] Every server action / API route returns 401 when signed out (no API routes exist yet to verify against — revisit when F-TXN-01 adds the first one)
+- [x] First successful sign-in creates the `users` row (category seeding wired in F-CAT-01)
+- [x] Sign-out works and clears the session
+- [x] Password is hashed (scrypt, salted); never logged or stored in plaintext
+- [x] Unit tests for the hash/verify helpers
+**Acceptance criteria — Phase B (Google, later)**
 - [ ] "Sign in with Google" works for the allowed email
 - [ ] Any other Google account sees an "Access denied" page and no user row is created
-- [ ] Every page except sign-in redirects to sign-in when signed out
-- [ ] Every server action / API route returns 401 when signed out
-- [ ] First sign-in creates the `users` row and triggers category seeding (F-CAT-01)
-- [ ] Sign-out works and clears the session
 - [ ] e2e test covers the allowed and denied flows (mocked provider)
 
 ---

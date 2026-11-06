@@ -1,7 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("home page loads", async ({ page }) => {
+test("unauthenticated visit redirects to login", async ({ page }) => {
   await page.goto("/");
+  await page.waitForURL(/\/login(\?|$)/);
   await expect(page.getByRole("heading", { name: "Finance Tracker" })).toBeVisible();
-  await expect(page.getByTestId("format-check")).toHaveText("₹1,23,456.00");
+  await expect(page.getByLabel("Email")).toBeVisible();
+  await expect(page.getByLabel("Password")).toBeVisible();
 });
