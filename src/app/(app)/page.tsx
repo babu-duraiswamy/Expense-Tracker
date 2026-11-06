@@ -28,11 +28,11 @@ const QUICK_LINKS = [
     status: "soon" as const,
   },
   {
-    href: "#",
+    href: "/reports",
     icon: TargetIcon,
-    title: "Reports & insights",
-    description: "See where your money goes, with tips to save more.",
-    status: "soon" as const,
+    title: "Reports",
+    description: "See where your money goes, for any period.",
+    status: "ready" as const,
   },
 ];
 
