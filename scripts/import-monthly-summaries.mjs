@@ -4,9 +4,10 @@
 // Usage:
 //   node scripts/import-monthly-summaries.mjs <path-to-json> [--email you@example.com]
 //
-// The JSON file shape is described in scripts/monthly-summaries.example.json.
-// Re-running is safe: rows previously created by this script (matched by the
-// tag in the note) are removed before the import is written again.
+// Source category names are mapped onto the app's existing categories (see
+// CATEGORY_MAP). The script never creates categories. Expenses are recorded
+// as Cash and income as Net banking. Re-running is safe: rows previously
+// created by this script (matched by the tag in the note) are removed first.
 
 import { readFileSync } from "node:fs";
 import { config } from "dotenv";
@@ -14,19 +15,22 @@ import { neon } from "@neondatabase/serverless";
 
 config({ path: ".env.local", quiet: true });
 
-const NAME_ALIASES = { "Personal Care": "Personal care", Miscellaneous: "Other" };
-const NEW_EXPENSE_CATEGORIES = {
-  Investment: "need",
-  "Car expenses": "need",
-  "For Home": "need",
-  Fuel: "need",
-  "Amma Medical": "need",
-  "Appa spends": "need",
-  "Paddlerz Coaching": "need",
-  "Eating Out": "want",
-  "Tea/Coffee": "want",
-  "Nandavanam Expenses": "want",
+const CATEGORY_MAP = {
+  "Personal Care": "Personal care",
+  Miscellaneous: "Other",
+  "Car expenses": "Transport",
+  Fuel: "Transport",
+  "For Home": "Shopping",
+  "Amma Medical": "Health",
+  "Eating Out": "Food & dining",
+  "Tea/Coffee": "Food & dining",
+  "Appa spends": "Other",
+  "Nandavanam Expenses": "Other",
+  "Paddlerz Coaching": "Education",
+  Investment: "Other",
 };
+
+const INCOME_CATEGORY = "Salary";
 
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith("--"));
@@ -58,57 +62,44 @@ const removed = await sql.query(
 );
 console.log(`Removed ${removed.length} rows from a previous import.`);
 
-const categoryNames = new Set(["Salary"]);
-for (const m of data.months) {
-  for (const name of Object.keys(m.categories)) categoryNames.add(NAME_ALIASES[name] ?? name);
-}
-for (const name of categoryNames) {
-  if (name === "Salary") continue;
-  const needOrWant = NEW_EXPENSE_CATEGORIES[name] ?? null;
-  await sql.query(
-    `insert into categories (user_id, name, kind, need_or_want)
-     values ($1, $2, 'expense', $3)
-     on conflict (user_id, kind, name) do nothing`,
-    [userId, name, needOrWant],
-  );
-}
-
-const categoryIds = new Map();
-const rows = await sql.query("select id, name, kind from categories where user_id = $1", [userId]);
-for (const r of rows) categoryIds.set(`${r.kind}:${r.name}`, r.id);
-
-function expenseCategoryId(name) {
-  const id = categoryIds.get(`expense:${NAME_ALIASES[name] ?? name}`);
-  if (!id) throw new Error(`Missing expense category: ${name}`);
-  return id;
-}
+const categoryRows = await sql.query("select id, name, kind from categories where user_id = $1", [
+  userId,
+]);
+const categoryId = (kind, name) => {
+  const row = categoryRows.find((c) => c.kind === kind && c.name === name);
+  if (!row) throw new Error(`No ${kind} category named "${name}" in the app.`);
+  return row.id;
+};
 
 let inserted = 0;
 for (const m of data.months) {
   const occurredOn = `${m.month}-01`;
 
   if (m.income > 0) {
-    const salaryId = categoryIds.get("income:Salary");
-    if (!salaryId) throw new Error("Missing income category: Salary");
     await sql.query(
       `insert into transactions (user_id, type, amount_minor, occurred_on, category_id, payment_mode, note)
        values ($1, 'income', $2, $3, $4, 'net_banking', $5)`,
-      [userId, m.income * 100, occurredOn, salaryId, data.tag],
+      [userId, m.income * 100, occurredOn, categoryId("income", INCOME_CATEGORY), data.tag],
     );
     inserted++;
   }
 
-  for (const [name, amount] of Object.entries(m.categories)) {
+  const perCategory = new Map();
+  for (const [source, amount] of Object.entries(m.categories)) {
+    const target = CATEGORY_MAP[source] ?? source;
+    perCategory.set(target, (perCategory.get(target) ?? 0) + amount);
+  }
+  for (const [name, amount] of perCategory) {
     if (amount <= 0) continue;
     await sql.query(
       `insert into transactions (user_id, type, amount_minor, occurred_on, category_id, payment_mode, note)
        values ($1, 'expense', $2, $3, $4, 'cash', $5)`,
-      [userId, amount * 100, occurredOn, expenseCategoryId(name), data.tag],
+      [userId, amount * 100, occurredOn, categoryId("expense", name), data.tag],
     );
     inserted++;
   }
 
-  console.log(`${m.month}: imported (income ${m.income}, expense ${m.expenseTotal})`);
+  console.log(`${m.month}: income ${m.income}, expense ${m.expenseTotal}`);
 }
 
 console.log(`Inserted ${inserted} transactions for ${email}.`);
