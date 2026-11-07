@@ -16,6 +16,8 @@ import { todayIST } from "@/lib/dates";
 import { getCategoryBreakdown, getMonthlyTrend, getPeriodSummary } from "@/lib/reports/queries";
 import { listBudgetsWithProgress } from "@/lib/budgets/queries";
 import { listTransactions } from "@/lib/transactions/queries";
+import { listActiveCategories } from "@/lib/categories/queries";
+import { VoiceEntry } from "@/components/voice/voice-entry";
 import { computeInsightsForPeriod } from "@/lib/insights/engine";
 import { rankInsights, renderTip } from "@/lib/insights/tips";
 import { PAYMENT_MODES } from "@/lib/constants";
@@ -70,17 +72,29 @@ export default async function Home() {
   const previous = previousPeriod(period);
   const window = sixMonthWindow(today);
 
-  const [summary, prevSummary, trend, breakdown, budgets, insights, recent, session] =
-    await Promise.all([
-      getPeriodSummary(userId, period),
-      getPeriodSummary(userId, previous),
-      getMonthlyTrend(userId, window),
-      getCategoryBreakdown(userId, period, "expense"),
-      listBudgetsWithProgress(userId, today),
-      computeInsightsForPeriod(userId, period),
-      listTransactions(userId, {}, { limit: 6, offset: 0 }),
-      auth(),
-    ]);
+  const [
+    summary,
+    prevSummary,
+    trend,
+    breakdown,
+    budgets,
+    insights,
+    recent,
+    session,
+    expenseCats,
+    incomeCats,
+  ] = await Promise.all([
+    getPeriodSummary(userId, period),
+    getPeriodSummary(userId, previous),
+    getMonthlyTrend(userId, window),
+    getCategoryBreakdown(userId, period, "expense"),
+    listBudgetsWithProgress(userId, today),
+    computeInsightsForPeriod(userId, period),
+    listTransactions(userId, {}, { limit: 6, offset: 0 }),
+    auth(),
+    listActiveCategories(userId, "expense"),
+    listActiveCategories(userId, "income"),
+  ]);
 
   const topTips = rankInsights(insights, 3);
 
@@ -129,6 +143,8 @@ export default async function Home() {
           </Link>
         </div>
       </section>
+
+      <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard

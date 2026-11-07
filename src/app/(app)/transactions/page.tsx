@@ -11,6 +11,8 @@ import {
   type TransactionWithCategory,
 } from "@/lib/transactions/queries";
 import { TransactionFilters } from "./filters";
+import { listActiveCategories } from "@/lib/categories/queries";
+import { VoiceEntry } from "@/components/voice/voice-entry";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -64,10 +66,12 @@ export default async function TransactionsPage({
   const page = Math.max(1, Number(sp.page ?? "1") || 1);
   const offset = (page - 1) * PAGE_SIZE;
 
-  const [transactions, totals, categories] = await Promise.all([
+  const [transactions, totals, categories, expenseCats, incomeCats] = await Promise.all([
     listTransactions(userId, filters, { limit: PAGE_SIZE, offset }),
     getTransactionTotals(userId, filters),
     listCategoriesForFilter(userId),
+    listActiveCategories(userId, "expense"),
+    listActiveCategories(userId, "income"),
   ]);
 
   const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
@@ -89,6 +93,8 @@ export default async function TransactionsPage({
           Add
         </Link>
       </div>
+
+      <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
 
       <TransactionFilters categories={categories} />
 
