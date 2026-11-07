@@ -80,7 +80,7 @@ export function StatCard({
             {Math.abs(delta).toFixed(0)}%
           </span>
         ) : null}
-        <span className="text-muted-foreground truncate">{footnote ?? "vs last month"}</span>
+        {footnote && <span className="text-muted-foreground truncate">{footnote}</span>}
       </div>
     </div>
   );

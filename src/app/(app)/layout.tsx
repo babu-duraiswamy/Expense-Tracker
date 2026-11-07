@@ -45,7 +45,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <KeyboardShortcuts />
-      <main className="mx-auto max-w-6xl px-4 pt-6 pb-28 sm:px-6 sm:pt-10 md:pb-12">
+      <main className="mx-auto max-w-6xl px-5 pt-8 pb-28 sm:px-8 sm:pt-12 md:pb-16">
         {children}
       </main>
       <MobileNav />

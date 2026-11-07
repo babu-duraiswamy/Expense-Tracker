@@ -9,7 +9,7 @@ const HIGHLIGHTS = [
 
 export default function LoginPage() {
   return (
-    <main className="via-background relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50 p-6">
+    <main className="via-background relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:from-indigo-950/40 dark:to-violet-950/40">
       <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-indigo-400/20 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 -bottom-24 size-96 rounded-full bg-violet-400/20 blur-3xl" />
 

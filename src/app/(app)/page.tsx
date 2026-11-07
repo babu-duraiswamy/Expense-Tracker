@@ -90,7 +90,7 @@ export default async function Home() {
     getCategoryBreakdown(userId, period, "expense"),
     listBudgetsWithProgress(userId, today),
     computeInsightsForPeriod(userId, period),
-    listTransactions(userId, {}, { limit: 6, offset: 0 }),
+    listTransactions(userId, {}, { limit: 5, offset: 0 }),
     auth(),
     listActiveCategories(userId, "expense"),
     listActiveCategories(userId, "income"),
@@ -111,7 +111,7 @@ export default async function Home() {
       : null;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-10">
       <section className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-muted-foreground text-sm">{longDate.format(now)}</p>
@@ -120,7 +120,8 @@ export default async function Home() {
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">Here is where {period.label} stands.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
           <Link
             href="/transactions/new?type=expense"
             className={cn(
@@ -143,8 +144,6 @@ export default async function Home() {
           </Link>
         </div>
       </section>
-
-      <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -236,7 +235,7 @@ export default async function Home() {
             </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {budgets.slice(0, 4).map((b) => (
+              {budgets.slice(0, 2).map((b) => (
                 <BudgetCard key={b.id} budget={b} />
               ))}
             </div>

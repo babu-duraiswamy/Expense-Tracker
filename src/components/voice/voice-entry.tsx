@@ -1,12 +1,16 @@
 "use client";
 
-import { MicIcon, MicOffIcon } from "lucide-react";
+import { MicIcon, MicOffIcon, Trash2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { addTransactionQuickAction } from "@/app/(app)/transactions/quick-actions";
+import { findTransactionMatchesAction } from "@/app/(app)/transactions/find-actions";
+import { deleteTransactionAction } from "@/app/(app)/transactions/actions";
 import { PAYMENT_MODES, type PaymentMode } from "@/lib/constants";
 import { formatINR, paiseToInput, toPaise } from "@/lib/money";
-import { parseVoiceEntry, type VoiceCategory, type VoiceEntry } from "@/lib/voice/parse-entry";
+import { parseVoiceCommand, type VoiceCommand } from "@/lib/voice/command";
+import type { VoiceCategory, VoiceEntry } from "@/lib/voice/parse-entry";
+import type { TransactionMatch } from "@/lib/transactions/find";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 type Recognition = {
   lang: string;
@@ -55,6 +60,10 @@ const PAYMENT_LABELS = Object.fromEntries(PAYMENT_MODES.map((m) => [m.value, m.l
   string
 >;
 
+type Pending =
+  | { kind: "add"; transcript: string; entry: VoiceEntry }
+  | { kind: "delete"; transcript: string; matches: TransactionMatch[] };
+
 export function VoiceEntry({
   expenseCategories,
   incomeCategories,
@@ -71,14 +80,45 @@ export function VoiceEntry({
     () => false,
   );
   const [listening, setListening] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [busy, startTransition] = useTransition();
   const recognitionRef = useRef<Recognition | null>(null);
 
   useEffect(() => () => recognitionRef.current?.abort(), []);
-  const [message, setMessage] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ transcript: string; entry: VoiceEntry } | null>(null);
-  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!message) return;
+    const timer = setTimeout(() => setMessage(null), 4000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
   const categories = [...expenseCategories, ...incomeCategories];
+
+  function handleCommand(transcript: string) {
+    const result = parseVoiceCommand(transcript, { categories, today });
+    if (!result.ok) {
+      setMessage(result.reason);
+      return;
+    }
+    const command: VoiceCommand = result.command;
+    if (command.kind === "add") {
+      setPending({ kind: "add", transcript, entry: command.entry });
+      return;
+    }
+    startTransition(async () => {
+      const matches = await findTransactionMatchesAction({
+        amountMinor: command.amountMinor,
+        categoryId: command.categoryId,
+        occurredOn: command.occurredOn,
+      });
+      if (matches.length === 0) {
+        setMessage("No matching transaction found.");
+        return;
+      }
+      setPending({ kind: "delete", transcript, matches });
+    });
+  }
 
   function listen() {
     const Ctor = getRecognitionConstructor();
@@ -93,20 +133,14 @@ export function VoiceEntry({
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
       recognition.stop();
-      const transcript = event.results[0]?.[0]?.transcript ?? "";
-      const result = parseVoiceEntry(transcript, { categories, today });
-      if (!result.ok) {
-        setMessage(result.reason);
-        return;
-      }
-      setDraft({ transcript, entry: result.entry });
+      handleCommand(event.results[0]?.[0]?.transcript ?? "");
     };
     recognition.onerror = (event) => {
       recognition.stop();
       setMessage(
         event.error === "not-allowed"
           ? "Microphone access is blocked. Allow it in the browser's site settings."
-          : "I did not hear anything. Tap the microphone and try again.",
+          : "I did not hear anything. Tap the microphone to try again.",
       );
     };
     recognition.onend = () => {
@@ -117,7 +151,7 @@ export function VoiceEntry({
     recognition.start();
   }
 
-  function save(entry: VoiceEntry) {
+  function saveEntry(entry: VoiceEntry) {
     startTransition(async () => {
       const result = await addTransactionQuickAction({
         type: entry.type,
@@ -127,12 +161,26 @@ export function VoiceEntry({
         paymentMode: entry.paymentMode,
       });
       if (result.ok) {
-        setDraft(null);
+        setPending(null);
         setMessage(`${result.summary}${entry.categoryName ? ` · ${entry.categoryName}` : ""}`);
         router.refresh();
       } else {
         setMessage(result.error);
       }
+    });
+  }
+
+  function deleteMatch(match: TransactionMatch) {
+    startTransition(async () => {
+      await deleteTransactionAction(match.id);
+      setMessage(
+        `Deleted ${formatINR(match.amountMinor)}${match.categoryName ? ` · ${match.categoryName}` : ""}`,
+      );
+      setPending((p) =>
+        p?.kind === "delete" ? { ...p, matches: p.matches.filter((m) => m.id !== match.id) } : p,
+      );
+      if (pending?.kind === "delete" && pending.matches.length <= 1) setPending(null);
+      router.refresh();
     });
   }
 
@@ -146,43 +194,121 @@ export function VoiceEntry({
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <>
       <Button
         type="button"
         variant="outline"
         onClick={listen}
-        disabled={listening}
-        className="w-fit gap-2 rounded-xl"
+        disabled={listening || busy}
+        aria-label="Speak a transaction"
+        className="h-10 gap-2 rounded-xl px-3"
       >
-        <MicIcon className={listening ? "size-4 animate-pulse text-rose-600" : "size-4"} />
-        {listening ? "Listening…" : "Speak a transaction"}
+        <MicIcon className={cn("size-4", listening && "animate-pulse text-rose-600")} />
+        <span className="hidden text-sm sm:inline">{listening ? "Listening…" : "Speak"}</span>
       </Button>
+
       {message && (
-        <p className="text-muted-foreground text-sm" role="status">
+        <div
+          role="status"
+          className="bg-foreground text-background fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full px-4 py-2 text-sm shadow-lg md:bottom-8"
+        >
           {message}
-        </p>
+        </div>
       )}
 
-      {draft && (
-        <ConfirmDialog
-          key={draft.transcript}
-          draft={draft.entry}
-          transcript={draft.transcript}
+      {pending?.kind === "add" && (
+        <AddDialog
+          key={pending.transcript}
+          transcript={pending.transcript}
+          draft={pending.entry}
           expenseCategories={expenseCategories}
           incomeCategories={incomeCategories}
           today={today}
-          pending={pending}
-          onCancel={() => setDraft(null)}
-          onSave={save}
+          pending={busy}
+          onCancel={() => setPending(null)}
+          onSave={saveEntry}
         />
       )}
-    </div>
+
+      {pending?.kind === "delete" && (
+        <DeleteDialog
+          transcript={pending.transcript}
+          matches={pending.matches}
+          pending={busy}
+          onClose={() => setPending(null)}
+          onDelete={deleteMatch}
+        />
+      )}
+    </>
   );
 }
 
-function ConfirmDialog({
-  draft,
+function DeleteDialog({
   transcript,
+  matches,
+  pending,
+  onClose,
+  onDelete,
+}: {
+  transcript: string;
+  matches: TransactionMatch[];
+  pending: boolean;
+  onClose: () => void;
+  onDelete: (match: TransactionMatch) => void;
+}) {
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete which transaction?</DialogTitle>
+          <DialogDescription>
+            I heard: &ldquo;{transcript}&rdquo;. Choose the one to delete.
+          </DialogDescription>
+        </DialogHeader>
+        <ul className="divide-border -mx-1 flex flex-col divide-y">
+          {matches.map((m) => (
+            <li key={m.id} className="flex items-center justify-between gap-3 px-1 py-3">
+              <span className="flex min-w-0 flex-col">
+                <span className="text-sm font-medium">
+                  {m.type === "income" ? "+" : "−"}
+                  {formatINR(m.amountMinor)} · {m.categoryName ?? "Uncategorised"}
+                </span>
+                <span className="text-muted-foreground text-xs">
+                  {new Date(`${m.occurredOn}T00:00:00`).toLocaleDateString("en-IN", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {m.note ? ` · ${m.note}` : ""}
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={pending}
+                onClick={() => onDelete(m)}
+                className="text-destructive hover:text-destructive shrink-0 gap-1.5 rounded-lg"
+              >
+                <Trash2Icon className="size-3.5" />
+                Delete
+              </Button>
+            </li>
+          ))}
+        </ul>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Done
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddDialog({
+  transcript,
+  draft,
   expenseCategories,
   incomeCategories,
   today,
@@ -190,8 +316,8 @@ function ConfirmDialog({
   onCancel,
   onSave,
 }: {
-  draft: VoiceEntry;
   transcript: string;
+  draft: VoiceEntry;
   expenseCategories: VoiceCategory[];
   incomeCategories: VoiceCategory[];
   today: string;
@@ -220,11 +346,11 @@ function ConfirmDialog({
         <DialogHeader>
           <DialogTitle>Check before saving</DialogTitle>
           <DialogDescription>
-            I heard: “{transcript}”. Change anything that&apos;s wrong, then save.
+            I heard: &ldquo;{transcript}&rdquo;. Change anything that&apos;s wrong, then save.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <ToggleGroup
             value={[type]}
             onValueChange={(v) => v[0] && setType(v[0] as "expense" | "income")}

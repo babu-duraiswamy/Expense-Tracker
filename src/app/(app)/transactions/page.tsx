@@ -85,16 +85,17 @@ export default async function TransactionsPage({
           <h1 className="text-3xl font-semibold tracking-tight">Transactions</h1>
           <p className="text-muted-foreground mt-1 text-sm">Newest first</p>
         </div>
-        <Link
-          href="/transactions/new"
-          className={cn(buttonVariants(), "hidden gap-1.5 rounded-xl sm:inline-flex")}
-        >
-          <PlusIcon className="size-4" />
-          Add
-        </Link>
+        <div className="flex items-center gap-2">
+          <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
+          <Link
+            href="/transactions/new"
+            className={cn(buttonVariants(), "hidden gap-1.5 rounded-xl sm:inline-flex")}
+          >
+            <PlusIcon className="size-4" />
+            Add
+          </Link>
+        </div>
       </div>
-
-      <VoiceEntry expenseCategories={expenseCats} incomeCategories={incomeCats} today={today} />
 
       <TransactionFilters categories={categories} />
 

@@ -126,7 +126,7 @@ function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function findCategory(
+export function findCategory(
   lower: string,
   categories: VoiceCategory[],
   kind: "expense" | "income",
@@ -146,11 +146,74 @@ function findCategory(
   return null;
 }
 
+const MONTH_NAMES: Record<string, number> = {
+  january: 1,
+  february: 2,
+  march: 3,
+  april: 4,
+  may: 5,
+  june: 6,
+  july: 7,
+  august: 8,
+  september: 9,
+  october: 10,
+  november: 11,
+  december: 12,
+  jan: 1,
+  feb: 2,
+  mar: 3,
+  apr: 4,
+  jun: 6,
+  jul: 7,
+  aug: 8,
+  sep: 9,
+  sept: 9,
+  oct: 10,
+  nov: 11,
+  dec: 12,
+};
+const MONTH_PATTERN = Object.keys(MONTH_NAMES).join("|");
+const DAY_THEN_MONTH = new RegExp(
+  `\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_PATTERN})\\b`,
+);
+const MONTH_THEN_DAY = new RegExp(`\\b(${MONTH_PATTERN})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`);
+
+function isoDate(year: number, month: number, day: number): string {
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/** Pulls a spoken date ("today", "yesterday", "5 november", "november 5th") out of the text. */
+export function extractDate(text: string, today: string): { date: string | null; rest: string } {
+  const lower = text.toLowerCase();
+  const year = Number(today.slice(0, 4));
+
+  const dayFirst = lower.match(DAY_THEN_MONTH);
+  if (dayFirst) {
+    return {
+      date: isoDate(year, MONTH_NAMES[dayFirst[2]!]!, Number(dayFirst[1])),
+      rest: lower.replace(dayFirst[0], " "),
+    };
+  }
+  const monthFirst = lower.match(MONTH_THEN_DAY);
+  if (monthFirst) {
+    return {
+      date: isoDate(year, MONTH_NAMES[monthFirst[1]!]!, Number(monthFirst[2])),
+      rest: lower.replace(monthFirst[0], " "),
+    };
+  }
+  if (/\byesterday\b/.test(lower)) {
+    return { date: yesterdayOf(today), rest: lower.replace(/\byesterday\b/, " ") };
+  }
+  if (/\btoday\b/.test(lower)) return { date: today, rest: lower.replace(/\btoday\b/, " ") };
+  return { date: null, rest: lower };
+}
+
 export function parseVoiceEntry(
   text: string,
   options: { categories: VoiceCategory[]; today: string },
 ): { ok: true; entry: VoiceEntry } | { ok: false; reason: string } {
-  const amount = parseSpokenAmount(text);
+  const { date, rest } = extractDate(text, options.today);
+  const amount = parseSpokenAmount(rest);
   if (amount === null) {
     return {
       ok: false,
@@ -164,7 +227,7 @@ export function parseVoiceEntry(
     : "expense";
   const category = findCategory(lower, options.categories, type);
   const payment = PAYMENT_WORDS.find(([re]) => re.test(lower))?.[1];
-  const occurredOn = /\byesterday\b/.test(lower) ? yesterdayOf(options.today) : options.today;
+  const occurredOn = date ?? options.today;
 
   return {
     ok: true,
