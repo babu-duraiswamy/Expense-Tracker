@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isTyping } from "@/app/(app)/transactions/filters";
+import { OPEN_ASSISTANT_EVENT } from "@/components/assistant/assistant-panel";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export const SHORTCUTS: { keys: string[]; action: string }[] = [
   { keys: ["g", "r"], action: "Go to Reports" },
   { keys: ["g", "c"], action: "Go to Categories" },
   { keys: ["/"], action: "Search transactions" },
+  { keys: ["a"], action: "Ask the assistant" },
   { keys: ["Esc"], action: "Close dialogs" },
   { keys: ["Ctrl + Enter"], action: "Save the open form" },
   { keys: ["?"], action: "Show this list" },
@@ -71,6 +73,10 @@ export function KeyboardShortcuts() {
           e.preventDefault();
           awaitingGo = true;
           goTimer = setTimeout(clearGo, 1200);
+          break;
+        case "a":
+          e.preventDefault();
+          window.dispatchEvent(new Event(OPEN_ASSISTANT_EVENT));
           break;
         case "?":
           e.preventDefault();

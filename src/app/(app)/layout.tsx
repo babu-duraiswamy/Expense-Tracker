@@ -5,6 +5,7 @@ import { AppNav } from "@/components/app-nav";
 import { UserMenu } from "@/components/user-menu";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { MobileNav } from "@/components/mobile-nav";
+import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -48,6 +49,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         {children}
       </main>
       <MobileNav />
+      <AssistantPanel />
     </div>
   );
 }
