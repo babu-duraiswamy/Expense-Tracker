@@ -1,12 +1,14 @@
 "use client";
 
+import { ChevronDownIcon, SearchIcon, XIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { PAYMENT_MODES } from "@/lib/constants";
-import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 type CategoryOption = { id: string; name: string; kind: "expense" | "income" };
 
@@ -21,6 +23,19 @@ export function TransactionFilters({ categories }: { categories: CategoryOption[
   const note = searchParams.get("q") ?? "";
   const from = searchParams.get("from") ?? "";
   const to = searchParams.get("to") ?? "";
+
+  const activeAdvanced = categoryIds.length + paymentModes.length + (from ? 1 : 0) + (to ? 1 : 0);
+  const [open, setOpen] = useState(activeAdvanced > 0);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || isTyping(e.target)) return;
+      e.preventDefault();
+      document.getElementById("transaction-search")?.focus();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function navigate(updates: Record<string, string | null>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -43,83 +58,160 @@ export function TransactionFilters({ categories }: { categories: CategoryOption[
   }
 
   return (
-    <div className="bg-background flex flex-col gap-3 rounded-xl border p-4">
-      <div className="flex flex-wrap items-end gap-3">
-        <div className="flex flex-col gap-1.5">
-          <Label>Type</Label>
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <SearchIcon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+          <Input
+            id="transaction-search"
+            defaultValue={note}
+            placeholder="Search notes…  (press /)"
+            aria-label="Search notes"
+            className="h-10 rounded-xl pl-9"
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </div>
+        <div className="flex items-center gap-2">
           <ToggleGroup
             value={[type]}
             onValueChange={(v) => v[0] && navigate({ type: v[0] === "all" ? null : v[0] })}
             variant="outline"
-            size="sm"
+            className="rounded-xl"
           >
-            <ToggleGroupItem value="all">All</ToggleGroupItem>
-            <ToggleGroupItem value="expense">Expense</ToggleGroupItem>
-            <ToggleGroupItem value="income">Income</ToggleGroupItem>
+            <ToggleGroupItem value="all" className="h-10 rounded-lg px-3">
+              All
+            </ToggleGroupItem>
+            <ToggleGroupItem value="expense" className="h-10 rounded-lg px-3">
+              Expense
+            </ToggleGroupItem>
+            <ToggleGroupItem value="income" className="h-10 rounded-lg px-3">
+              Income
+            </ToggleGroupItem>
           </ToggleGroup>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="from">From</Label>
-          <Input
-            id="from"
-            type="date"
-            defaultValue={from}
-            className="w-36"
-            onChange={(e) => navigate({ from: e.target.value || null })}
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="to">To</Label>
-          <Input
-            id="to"
-            type="date"
-            defaultValue={to}
-            className="w-36"
-            onChange={(e) => navigate({ to: e.target.value || null })}
-          />
-        </div>
-        <div className="flex flex-1 flex-col gap-1.5">
-          <Label htmlFor="q">Search note</Label>
-          <Input
-            id="q"
-            defaultValue={note}
-            placeholder="e.g. Swiggy"
-            onChange={(e) => onSearchChange(e.target.value)}
-          />
+          <Button
+            type="button"
+            variant="outline"
+            className="h-10 rounded-xl"
+            aria-expanded={open}
+            onClick={() => setOpen((v) => !v)}
+          >
+            Filters
+            {activeAdvanced > 0 && (
+              <span className="bg-primary text-primary-foreground ml-1 rounded-full px-1.5 text-[11px]">
+                {activeAdvanced}
+              </span>
+            )}
+            <ChevronDownIcon className={cn("size-4 transition-transform", open && "rotate-180")} />
+          </Button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label>Category</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {categories.map((c) => (
-            <Badge
-              key={c.id}
-              variant={categoryIds.includes(c.id) ? "default" : "outline"}
-              className="cursor-pointer select-none"
-              onClick={() => toggleListParam("category", categoryIds, c.id)}
-            >
-              {c.name}
-            </Badge>
-          ))}
-        </div>
-      </div>
+      {open && (
+        <div className="bg-card ring-foreground/5 flex flex-col gap-4 rounded-2xl p-4 shadow-sm ring-1">
+          <div className="grid grid-cols-2 gap-3 sm:max-w-md">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="from" className="text-xs">
+                From
+              </Label>
+              <Input
+                id="from"
+                type="date"
+                value={from}
+                className="h-9"
+                onChange={(e) => navigate({ from: e.target.value || null })}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="to" className="text-xs">
+                To
+              </Label>
+              <Input
+                id="to"
+                type="date"
+                value={to}
+                className="h-9"
+                onChange={(e) => navigate({ to: e.target.value || null })}
+              />
+            </div>
+          </div>
 
-      <div className="flex flex-col gap-1.5">
-        <Label>Payment mode</Label>
-        <div className="flex flex-wrap gap-1.5">
-          {PAYMENT_MODES.map((m) => (
-            <Badge
-              key={m.value}
-              variant={paymentModes.includes(m.value) ? "default" : "outline"}
-              className="cursor-pointer select-none"
-              onClick={() => toggleListParam("mode", paymentModes, m.value)}
-            >
-              {m.label}
-            </Badge>
-          ))}
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs">Categories</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((c) => (
+                <Chip
+                  key={c.id}
+                  active={categoryIds.includes(c.id)}
+                  onClick={() => toggleListParam("category", categoryIds, c.id)}
+                >
+                  {c.name}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label className="text-xs">Payment mode</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {PAYMENT_MODES.map((m) => (
+                <Chip
+                  key={m.value}
+                  active={paymentModes.includes(m.value)}
+                  onClick={() => toggleListParam("mode", paymentModes, m.value)}
+                >
+                  {m.label}
+                </Chip>
+              ))}
+            </div>
+          </div>
+
+          {activeAdvanced > 0 && (
+            <div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+                onClick={() => navigate({ category: null, mode: null, from: null, to: null })}
+              >
+                <XIcon className="size-3.5" />
+                Clear advanced filters
+              </Button>
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
+}
+
+function Chip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        active
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border text-muted-foreground hover:text-foreground hover:bg-muted",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function isTyping(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  return target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 }

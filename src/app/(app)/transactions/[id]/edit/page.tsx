@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { listActiveCategories } from "@/lib/categories/queries";
 import { requireUserId } from "@/lib/auth/session";
 import { getTransaction } from "@/lib/transactions/queries";
+import { DeleteButton } from "../../delete-button";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -17,10 +18,10 @@ export default async function EditTransactionPage({ params }: { params: Promise<
   ]);
 
   return (
-    <div className="mx-auto max-w-md">
-      <Card>
+    <div className="mx-auto flex max-w-lg flex-col gap-4">
+      <Card className="rounded-2xl shadow-sm">
         <CardHeader>
-          <CardTitle>Edit transaction</CardTitle>
+          <CardTitle className="text-xl">Edit transaction</CardTitle>
         </CardHeader>
         <CardContent>
           <TransactionForm
@@ -31,6 +32,7 @@ export default async function EditTransactionPage({ params }: { params: Promise<
           />
         </CardContent>
       </Card>
+      <DeleteButton id={transaction.id} />
     </div>
   );
 }

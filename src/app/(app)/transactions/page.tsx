@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { PlusIcon } from "lucide-react";
+import { ChevronRightIcon, PlusIcon, ReceiptIcon } from "lucide-react";
 import { requireUserId } from "@/lib/auth/session";
 import { formatINR } from "@/lib/money";
 import { PAYMENT_MODES, type PaymentMode } from "@/lib/constants";
@@ -11,10 +11,7 @@ import {
   type TransactionWithCategory,
 } from "@/lib/transactions/queries";
 import { TransactionFilters } from "./filters";
-import { DeleteButton } from "./delete-button";
-import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 50;
@@ -34,12 +31,18 @@ function groupByDate(
   return [...groups.entries()];
 }
 
-function formatDateHeading(isoDate: string): string {
+function dateHeading(isoDate: string, todayISO: string): string {
+  if (isoDate === todayISO) return "Today";
+  const [y, m, d] = todayISO.split("-").map(Number) as [number, number, number];
+  const yesterday = new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+  if (isoDate === yesterday) return "Yesterday";
+  const [iy, im, id] = isoDate.split("-").map(Number) as [number, number, number];
   return new Intl.DateTimeFormat("en-IN", {
-    day: "2-digit",
+    weekday: "short",
+    day: "numeric",
     month: "short",
-    year: "numeric",
-  }).format(new Date(`${isoDate}T00:00:00`));
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(iy, im - 1, id)));
 }
 
 export default async function TransactionsPage({
@@ -67,114 +70,122 @@ export default async function TransactionsPage({
     listCategoriesForFilter(userId),
   ]);
 
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
   const grouped = groupByDate(transactions);
-  const hasFilters = Object.values(sp).some(Boolean);
+  const hasAnyFilter = Object.entries(sp).some(([k, v]) => k !== "page" && Boolean(v));
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-3">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Transactions</h1>
-          <p className="text-muted-foreground text-sm">
-            All your income and expenses, newest first.
-          </p>
+          <p className="text-muted-foreground mt-1 text-sm">Newest first</p>
         </div>
-        <Link href="/transactions/new" className={cn(buttonVariants(), "gap-1.5")}>
-          <PlusIcon />
+        <Link
+          href="/transactions/new"
+          className={cn(buttonVariants(), "hidden gap-1.5 rounded-xl sm:inline-flex")}
+        >
+          <PlusIcon className="size-4" />
           Add
         </Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <Card>
-          <CardContent className="flex flex-col gap-1">
-            <span className="text-muted-foreground text-xs">Income</span>
-            <span className="text-lg font-semibold text-emerald-600">
-              {formatINR(totals.incomeMinor)}
-            </span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col gap-1">
-            <span className="text-muted-foreground text-xs">Expense</span>
-            <span className="text-destructive text-lg font-semibold">
-              {formatINR(totals.expenseMinor)}
-            </span>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="flex flex-col gap-1">
-            <span className="text-muted-foreground text-xs">Net</span>
-            <span className="text-lg font-semibold">{formatINR(totals.netMinor)}</span>
-          </CardContent>
-        </Card>
-      </div>
-
       <TransactionFilters categories={categories} />
 
+      <div className="text-sm">
+        <span className="text-muted-foreground">Income </span>
+        <span className="font-semibold text-emerald-600 tabular-nums">
+          {formatINR(totals.incomeMinor)}
+        </span>
+        <span className="text-muted-foreground mx-3">·</span>
+        <span className="text-muted-foreground">Expense </span>
+        <span className="font-semibold text-rose-600 tabular-nums">
+          {formatINR(totals.expenseMinor)}
+        </span>
+        <span className="text-muted-foreground mx-3">·</span>
+        <span className="text-muted-foreground">Net </span>
+        <span className="font-semibold tabular-nums">{formatINR(totals.netMinor)}</span>
+      </div>
+
       {grouped.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <p className="text-muted-foreground">
-              {hasFilters ? "No transactions match these filters." : "No transactions yet."}
-            </p>
-            {!hasFilters && (
-              <Link href="/transactions/new" className={cn(buttonVariants(), "gap-1.5")}>
-                <PlusIcon />
-                Add your first transaction
-              </Link>
-            )}
-          </CardContent>
-        </Card>
+        <div className="bg-card ring-foreground/5 flex flex-col items-center gap-3 rounded-2xl px-6 py-12 text-center shadow-sm ring-1">
+          <span className="bg-muted flex size-12 items-center justify-center rounded-full">
+            <ReceiptIcon className="text-muted-foreground size-5" />
+          </span>
+          <p className="font-medium">
+            {hasAnyFilter ? "Nothing matches these filters" : "No transactions yet"}
+          </p>
+          <p className="text-muted-foreground text-sm">
+            {hasAnyFilter ? "Try clearing a filter." : "Add your first one to start tracking."}
+          </p>
+          {!hasAnyFilter && (
+            <Link href="/transactions/new" className={cn(buttonVariants(), "mt-1 rounded-xl")}>
+              <PlusIcon className="size-4" />
+              Add transaction
+            </Link>
+          )}
+        </div>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {grouped.map(([date, items]) => (
-            <div key={date}>
-              <h2 className="text-muted-foreground mb-1.5 text-xs font-medium">
-                {formatDateHeading(date)}
+            <section key={date} className="flex flex-col gap-1.5">
+              <h2 className="text-muted-foreground px-1 text-xs font-semibold tracking-wide uppercase">
+                {dateHeading(date, today)}
               </h2>
-              <Card>
-                <CardContent className="divide-border flex flex-col divide-y">
-                  {items.map((t) => (
-                    <div key={t.id} className="flex items-center justify-between gap-3 py-2.5">
-                      <Link
-                        href={`/transactions/${t.id}/edit`}
-                        className="flex min-w-0 flex-1 flex-col gap-0.5"
+              <div className="bg-card ring-foreground/5 divide-border divide-y overflow-hidden rounded-2xl shadow-sm ring-1">
+                {items.map((t) => {
+                  const isIncome = t.type === "income";
+                  return (
+                    <Link
+                      key={t.id}
+                      href={`/transactions/${t.id}/edit`}
+                      className="hover:bg-muted/50 active:bg-muted flex items-center gap-3 px-4 py-3.5 transition-colors"
+                    >
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
+                          isIncome
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-rose-500/10 text-rose-600",
+                        )}
+                        aria-hidden
                       >
+                        {(t.categoryName ?? "?").charAt(0).toUpperCase()}
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-sm font-medium">
                           {t.categoryName ?? "Uncategorised"}
                         </span>
-                        <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
-                          <Badge variant="secondary" className="text-[10px]">
-                            {PAYMENT_MODE_LABELS[t.paymentMode]}
-                          </Badge>
-                          {t.note && <span className="truncate">{t.note}</span>}
+                        <span className="text-muted-foreground truncate text-xs">
+                          {PAYMENT_MODE_LABELS[t.paymentMode]}
+                          {t.note ? ` · ${t.note}` : ""}
                         </span>
-                      </Link>
+                      </span>
                       <span
-                        className={`shrink-0 font-semibold ${
-                          t.type === "income" ? "text-emerald-600" : "text-destructive"
-                        }`}
+                        className={cn(
+                          "shrink-0 text-sm font-semibold tabular-nums",
+                          isIncome ? "text-emerald-600" : "text-foreground",
+                        )}
                       >
-                        {t.type === "income" ? "+" : "−"}
+                        {isIncome ? "+" : "−"}
                         {formatINR(t.amountMinor)}
                       </span>
-                      <DeleteButton id={t.id} label={t.categoryName ?? "transaction"} />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
+                      <ChevronRightIcon
+                        className="text-muted-foreground size-4 shrink-0"
+                        aria-hidden
+                      />
+                    </Link>
+                  );
+                })}
+              </div>
+            </section>
           ))}
 
           {transactions.length === PAGE_SIZE && (
             <div className="flex justify-center">
               <Link
-                href={{
-                  pathname: "/transactions",
-                  query: { ...sp, page: String(page + 1) },
-                }}
-                className={cn(buttonVariants({ variant: "outline" }))}
+                href={{ pathname: "/transactions", query: { ...sp, page: String(page + 1) } }}
+                className={cn(buttonVariants({ variant: "outline" }), "rounded-xl")}
               >
                 Load more
               </Link>

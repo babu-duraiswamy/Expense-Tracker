@@ -75,7 +75,16 @@ export function TransactionForm(props: Props) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-5">
+    <form
+      action={formAction}
+      className="flex flex-col gap-5"
+      onKeyDown={(e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.requestSubmit();
+        }
+      }}
+    >
       {mode === "edit" && <input type="hidden" name="id" value={transaction.id} />}
       <input type="hidden" name="type" value={type} />
 

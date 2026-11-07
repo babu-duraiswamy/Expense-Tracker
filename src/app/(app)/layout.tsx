@@ -3,6 +3,8 @@ import { PlusIcon, WalletCardsIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { AppNav } from "@/components/app-nav";
 import { UserMenu } from "@/components/user-menu";
+import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { MobileNav } from "@/components/mobile-nav";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -24,7 +26,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </Link>
 
           <div className="flex min-w-0 items-center gap-2">
-            <div className="min-w-0 [scrollbar-width:none] overflow-x-auto [&::-webkit-scrollbar]:hidden">
+            <div className="hidden min-w-0 [scrollbar-width:none] overflow-x-auto md:block [&::-webkit-scrollbar]:hidden">
               <AppNav />
             </div>
             <Link
@@ -32,7 +34,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               aria-label="Add transaction"
               className={cn(
                 buttonVariants({ size: "icon" }),
-                "shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm hover:opacity-90",
+                "hidden shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm hover:opacity-90 md:inline-flex",
               )}
             >
               <PlusIcon />
@@ -41,7 +43,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
+      <KeyboardShortcuts />
+      <main className="mx-auto max-w-6xl px-4 pt-6 pb-28 sm:px-6 sm:pt-10 md:pb-12">
+        {children}
+      </main>
+      <MobileNav />
     </div>
   );
 }
