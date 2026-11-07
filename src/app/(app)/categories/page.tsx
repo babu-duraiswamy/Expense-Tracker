@@ -14,7 +14,7 @@ export default async function CategoriesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Categories</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Categories</h1>
         <p className="text-muted-foreground text-sm">
           Organise your transactions. Expense categories carry a Need/Want tag used in reports.
         </p>

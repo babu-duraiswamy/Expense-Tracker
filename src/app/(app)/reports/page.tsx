@@ -99,7 +99,7 @@ export default async function ReportsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Reports</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Reports</h1>
         <p className="text-muted-foreground text-sm">
           Income, spend and savings for any period, compared with the one before it.
         </p>

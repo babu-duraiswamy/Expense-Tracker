@@ -52,3 +52,39 @@ export async function setArchivedAction(id: string, isArchived: boolean): Promis
   await setCategoryArchived(userId, id, isArchived);
   revalidatePath("/categories");
 }
+
+export type InlineCategory = {
+  id: string;
+  name: string;
+  kind: "expense" | "income";
+  needOrWant: "need" | "want" | null;
+};
+
+export async function createCategoryInlineAction(input: {
+  name: string;
+  kind: "expense" | "income";
+  needOrWant?: "need" | "want";
+}): Promise<{ ok: true; category: InlineCategory } | { ok: false; error: string }> {
+  const userId = await requireUserId();
+  const parsed = createCategorySchema.safeParse({
+    name: input.name,
+    kind: input.kind,
+    needOrWant: input.kind === "expense" ? (input.needOrWant ?? "need") : undefined,
+  });
+  if (!parsed.success)
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid category" };
+
+  try {
+    const row = await createCategory(userId, parsed.data);
+    revalidatePath("/categories");
+    return {
+      ok: true,
+      category: { id: row.id, name: row.name, kind: row.kind, needOrWant: row.needOrWant },
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Could not create category",
+    };
+  }
+}

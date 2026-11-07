@@ -1,10 +1,12 @@
 "use client";
 
+import { PlusIcon } from "lucide-react";
 import { useActionState, useState } from "react";
 import type { Category, Transaction } from "@/db/schema";
 import { NEED_OR_WANT_LABELS, PAYMENT_MODES, type PaymentMode } from "@/lib/constants";
 import { paiseToInput } from "@/lib/money";
 import { createTransactionAction, updateTransactionAction } from "@/app/(app)/transactions/actions";
+import { NewCategoryDialog } from "@/components/transactions/new-category-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +14,7 @@ import {
   Select,
   SelectContent,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -22,25 +25,57 @@ const PAYMENT_MODE_LABELS: Record<PaymentMode, string> = Object.fromEntries(
   PAYMENT_MODES.map((m) => [m.value, m.label]),
 ) as Record<PaymentMode, string>;
 
+const NEW_CATEGORY = "__new__";
+
+type TxnType = "expense" | "income";
+
 type Props = {
   expenseCategories: Category[];
   incomeCategories: Category[];
 } & (
-  | { mode: "create"; today: string; defaultPaymentMode: PaymentMode; transaction?: undefined }
-  | { mode: "edit"; transaction: Transaction; today?: undefined; defaultPaymentMode?: undefined }
+  | {
+      mode: "create";
+      today: string;
+      defaultPaymentMode: PaymentMode;
+      defaultType?: TxnType;
+      transaction?: undefined;
+    }
+  | {
+      mode: "edit";
+      transaction: Transaction;
+      today?: undefined;
+      defaultPaymentMode?: undefined;
+      defaultType?: undefined;
+    }
 );
 
 export function TransactionForm(props: Props) {
   const { expenseCategories, incomeCategories, mode, transaction } = props;
   const action = mode === "create" ? createTransactionAction : updateTransactionAction;
   const [error, formAction, pending] = useActionState(action, undefined);
-  const [type, setType] = useState<"expense" | "income">(
-    transaction?.type === "income" ? "income" : "expense",
+  const [type, setType] = useState<TxnType>(
+    transaction?.type === "income"
+      ? "income"
+      : mode === "create" && props.defaultType === "income"
+        ? "income"
+        : "expense",
   );
-  const categories = type === "expense" ? expenseCategories : incomeCategories;
+  type CategoryOption = Pick<Category, "id" | "name" | "needOrWant">;
+  const [lists, setLists] = useState<Record<TxnType, CategoryOption[]>>({
+    expense: expenseCategories,
+    income: incomeCategories,
+  });
+  const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const categories = lists[type];
+
+  function switchType(next: TxnType) {
+    setType(next);
+    setCategoryId(null);
+  }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-5">
       {mode === "edit" && <input type="hidden" name="id" value={transaction.id} />}
       <input type="hidden" name="type" value={type} />
 
@@ -49,7 +84,7 @@ export function TransactionForm(props: Props) {
         <ToggleGroup
           value={[type]}
           onValueChange={(v) => {
-            if (v[0]) setType(v[0] as "expense" | "income");
+            if (v[0]) switchType(v[0] as TxnType);
           }}
           variant="outline"
           className="w-full"
@@ -70,6 +105,7 @@ export function TransactionForm(props: Props) {
           name="amountMinor"
           inputMode="decimal"
           placeholder="0.00"
+          className="h-12 text-lg font-semibold"
           defaultValue={transaction ? paiseToInput(transaction.amountMinor) : undefined}
           autoFocus={mode === "create"}
           required
@@ -78,9 +114,23 @@ export function TransactionForm(props: Props) {
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="categoryId">Category</Label>
-        <Select name="categoryId" key={type} defaultValue={transaction?.categoryId ?? undefined}>
-          <SelectTrigger id="categoryId" className="w-full">
-            <SelectValue placeholder="Choose a category" />
+        <Select
+          name="categoryId"
+          value={categoryId}
+          onValueChange={(v) => {
+            if (v === NEW_CATEGORY) {
+              setDialogOpen(true);
+              return;
+            }
+            setCategoryId(v);
+          }}
+        >
+          <SelectTrigger id="categoryId" className="h-10 w-full">
+            <SelectValue>
+              {(value: string | null) =>
+                value ? categories.find((c) => c.id === value)?.name : "Choose a category"
+              }
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {categories.length === 0 && (
@@ -99,8 +149,27 @@ export function TransactionForm(props: Props) {
                 )}
               </SelectItem>
             ))}
+            <SelectSeparator />
+            <SelectItem value={NEW_CATEGORY}>
+              <span className="text-primary inline-flex items-center gap-1.5 font-medium">
+                <PlusIcon className="size-3.5" />
+                New category
+              </span>
+            </SelectItem>
           </SelectContent>
         </Select>
+        <NewCategoryDialog
+          open={dialogOpen}
+          onOpenChange={setDialogOpen}
+          kind={type}
+          onCreated={(created) => {
+            setLists((prev) => ({
+              ...prev,
+              [created.kind]: [...prev[created.kind], created],
+            }));
+            if (created.kind === type) setCategoryId(created.id);
+          }}
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -110,6 +179,7 @@ export function TransactionForm(props: Props) {
             id="occurredOn"
             name="occurredOn"
             type="date"
+            className="h-10"
             defaultValue={transaction?.occurredOn ?? props.today}
             required
           />
@@ -120,7 +190,7 @@ export function TransactionForm(props: Props) {
             name="paymentMode"
             defaultValue={transaction?.paymentMode ?? props.defaultPaymentMode}
           >
-            <SelectTrigger id="paymentMode" className="w-full">
+            <SelectTrigger id="paymentMode" className="h-10 w-full">
               <SelectValue>{(value: PaymentMode) => PAYMENT_MODE_LABELS[value]}</SelectValue>
             </SelectTrigger>
             <SelectContent>
@@ -151,7 +221,7 @@ export function TransactionForm(props: Props) {
         </p>
       )}
 
-      <Button type="submit" disabled={pending} size="lg" className="w-full">
+      <Button type="submit" disabled={pending} size="lg" className="h-11 w-full text-base">
         {pending ? "Saving…" : mode === "create" ? "Save transaction" : "Save changes"}
       </Button>
     </form>
