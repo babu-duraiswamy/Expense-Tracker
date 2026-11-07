@@ -1,0 +1,12 @@
+{
+  "tag": "Imported monthly total (phone app)",
+  "months": [
+    {
+      "month": "2025-04",
+      "income": 91500,
+      "expenseTotal": 1200,
+      "balance": 90300,
+      "categories": { "Groceries": 900, "Fuel": 300 }
+    }
+  ]
+}
