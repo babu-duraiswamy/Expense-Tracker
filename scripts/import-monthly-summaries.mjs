@@ -28,7 +28,7 @@ const EXPENSE_CATEGORIES = {
   "Eating Out": { name: "Eating Out", needOrWant: "want" },
   "Tea/Coffee": { name: "Tea/Coffee", needOrWant: "want" },
   "Appa spends": { name: "Appa spends", needOrWant: "need" },
-  "Nandavanam Expenses": { name: "Nandavanam Expenses", needOrWant: "want" },
+  "Nandavanam Expenses": { name: "Nandavanam Expenses", needOrWant: "need" },
   "Paddlerz Coaching": { name: "Paddlerz Coaching", needOrWant: "need" },
   Travel: { name: "Travel", needOrWant: "want" },
   Gifts: { name: "Gifts", needOrWant: "want" },
