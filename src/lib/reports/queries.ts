@@ -175,6 +175,7 @@ export async function getSmallTransactionGroups(
         periodConditions(userId, period),
         eq(schema.transactions.type, "expense"),
         lte(schema.transactions.amountMinor, maxAmountMinor),
+        sql`(${schema.transactions.note} is null or ${schema.transactions.note} not like 'Imported monthly total%')`,
       ),
     )
     .groupBy(schema.categories.name);
@@ -184,4 +185,37 @@ export async function getSmallTransactionGroups(
     count: Number(r.count),
     totalMinor: Number(r.total),
   }));
+}
+
+export async function getEarliestTransactionDate(userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ earliest: sql<string | null>`min(${schema.transactions.occurredOn})` })
+    .from(schema.transactions)
+    .where(eq(schema.transactions.userId, userId));
+  return row?.earliest ?? null;
+}
+
+export type CategoryMonthRow = { month: string; totalMinor: number };
+
+export async function getCategoryMonthly(
+  userId: string,
+  categoryId: string,
+  period: Period,
+): Promise<CategoryMonthRow[]> {
+  const rows = await db
+    .select({
+      month: sql<string>`to_char(${schema.transactions.occurredOn}, 'YYYY-MM')`,
+      total: sql<string>`sum(${schema.transactions.amountMinor})`,
+    })
+    .from(schema.transactions)
+    .where(
+      and(
+        periodConditions(userId, period),
+        eq(schema.transactions.type, "expense"),
+        eq(schema.transactions.categoryId, categoryId),
+      ),
+    )
+    .groupBy(sql`to_char(${schema.transactions.occurredOn}, 'YYYY-MM')`)
+    .orderBy(sql`to_char(${schema.transactions.occurredOn}, 'YYYY-MM')`);
+  return rows.map((r) => ({ month: r.month, totalMinor: Number(r.total) }));
 }

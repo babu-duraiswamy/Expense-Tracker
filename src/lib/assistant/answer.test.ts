@@ -93,3 +93,47 @@ describe("answer", () => {
     expect(answer("savings", noIncome)).toContain("can't work out a savings rate");
   });
 });
+
+describe("answer for a single category", () => {
+  const forHome = {
+    ...base,
+    label: "All time (2 Jan 2026 – 7 Nov 2026)",
+    periodGiven: true,
+    category: {
+      name: "For Home",
+      totalMinor: 30000000,
+      monthly: [
+        { month: "2026-03", totalMinor: 2203300 },
+        { month: "2026-04", totalMinor: 1239400 },
+        { month: "2026-05", totalMinor: 0 },
+        { month: "2026-07", totalMinor: 1643100 },
+      ],
+    },
+  };
+
+  it("gives the total, the average and the highest month", () => {
+    const text = answer("categoryTotal", forHome);
+    expect(text).toContain("You've spent ₹3,00,000.00 on For Home");
+    expect(text).toContain("about ₹1,00,000.00 a month across 3 months");
+    expect(text).toContain("Highest month: Mar 2026 at ₹22,033.00");
+  });
+
+  it("lists only months with spending", () => {
+    const text = answer("categoryTotal", forHome);
+    expect(text).toContain("- Jul 2026: ₹16,431.00");
+    expect(text).not.toContain("May 2026");
+  });
+
+  it("explains when the category isn't in the user's list", () => {
+    expect(answer("categoryTotal", { ...forHome, category: null })).toContain(
+      "couldn't find that category",
+    );
+  });
+
+  it("says when there was no spending in the period", () => {
+    const none = { ...forHome, category: { name: "Gifts", totalMinor: 0, monthly: [] } };
+    expect(answer("categoryTotal", none)).toBe(
+      "No spending on Gifts in All time (2 Jan 2026 – 7 Nov 2026).",
+    );
+  });
+});

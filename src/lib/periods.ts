@@ -231,3 +231,8 @@ export function enumerateMonths(start: string, end: string): string[] {
   }
   return months;
 }
+
+export function allTimePeriod(earliest: string, today: string = todayIST()): Period {
+  const period = customPeriod(earliest, today);
+  return { ...period, label: `All time (${formatShort(earliest)} – ${formatShort(today)})` };
+}

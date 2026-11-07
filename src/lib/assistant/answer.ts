@@ -1,7 +1,14 @@
 import { formatINR, percentChange } from "@/lib/money";
 import { EXAMPLE_QUESTIONS, type Intent } from "./parse";
 
+export interface CategoryDetail {
+  name: string;
+  totalMinor: number;
+  monthly: { month: string; totalMinor: number }[];
+}
+
 export interface AssistantData {
+  category?: CategoryDetail | null;
   label: string;
   previousLabel: string;
   periodGiven: boolean;
@@ -226,6 +233,40 @@ function answerBudgets(d: AssistantData): string {
   return lines.join("\n");
 }
 
+function monthName(yyyyMm: string): string {
+  const [y, m] = yyyyMm.split("-").map(Number) as [number, number];
+  return new Intl.DateTimeFormat("en-IN", {
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, 1)));
+}
+
+function answerCategoryTotal(d: AssistantData): string {
+  const c = d.category;
+  if (!c)
+    return "I couldn't find that category in your list. Check the spelling against the Categories page.";
+  if (c.totalMinor === 0) return `No spending on ${c.name} in ${d.label}.`;
+
+  const share = d.summary.expenseMinor > 0 ? (c.totalMinor / d.summary.expenseMinor) * 100 : null;
+  const shareText =
+    share === null ? "" : `, which is ${pct(share)} of your expenses in that period`;
+  const lines = [`You've spent ${formatINR(c.totalMinor)} on ${c.name} in ${d.label}${shareText}.`];
+
+  const months = c.monthly.filter((m) => m.totalMinor > 0);
+  if (months.length > 1) {
+    const average = Math.round(c.totalMinor / months.length);
+    lines.push(
+      `That's about ${formatINR(average)} a month across ${months.length} months with spending.`,
+    );
+    const biggest = [...months].sort((a, b) => b.totalMinor - a.totalMinor)[0]!;
+    lines.push(`Highest month: ${monthName(biggest.month)} at ${formatINR(biggest.totalMinor)}.`);
+    lines.push("");
+    for (const m of months) lines.push(`- ${monthName(m.month)}: ${formatINR(m.totalMinor)}`);
+  }
+  return lines.join("\n") + notePeriod(d);
+}
+
 function answerHelp(): string {
   return ["I can answer questions like:", ...EXAMPLE_QUESTIONS.map((q) => `- "${q}"`)].join("\n");
 }
@@ -248,6 +289,8 @@ export function answer(intent: Intent, data: AssistantData): string {
       return answerSavings(data);
     case "budgets":
       return answerBudgets(data);
+    case "categoryTotal":
+      return answerCategoryTotal(data);
     case "help":
       return answerHelp();
   }
