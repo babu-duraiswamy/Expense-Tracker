@@ -2,7 +2,7 @@
 
 import { MicIcon, MicOffIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { addTransactionQuickAction } from "@/app/(app)/transactions/quick-actions";
 import { PAYMENT_MODES, type PaymentMode } from "@/lib/constants";
 import { formatINR, paiseToInput, toPaise } from "@/lib/money";
@@ -29,12 +29,15 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Recognition = {
   lang: string;
+  continuous: boolean;
   interimResults: boolean;
   maxAlternatives: number;
   onresult: ((event: { results: { 0: { transcript: string } }[] }) => void) | null;
   onerror: ((event: { error: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
+  stop: () => void;
+  abort: () => void;
 };
 
 type RecognitionConstructor = new () => Recognition;
@@ -68,6 +71,9 @@ export function VoiceEntry({
     () => false,
   );
   const [listening, setListening] = useState(false);
+  const recognitionRef = useRef<Recognition | null>(null);
+
+  useEffect(() => () => recognitionRef.current?.abort(), []);
   const [message, setMessage] = useState<string | null>(null);
   const [draft, setDraft] = useState<{ transcript: string; entry: VoiceEntry } | null>(null);
   const [pending, startTransition] = useTransition();
@@ -80,10 +86,13 @@ export function VoiceEntry({
     setMessage(null);
     // Chrome and Edge send the audio to the browser vendor's speech service for transcription.
     const recognition = new Ctor();
+    recognitionRef.current = recognition;
     recognition.lang = "en-IN";
+    recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
+      recognition.stop();
       const transcript = event.results[0]?.[0]?.transcript ?? "";
       const result = parseVoiceEntry(transcript, { categories, today });
       if (!result.ok) {
@@ -93,13 +102,17 @@ export function VoiceEntry({
       setDraft({ transcript, entry: result.entry });
     };
     recognition.onerror = (event) => {
+      recognition.stop();
       setMessage(
         event.error === "not-allowed"
           ? "Microphone access is blocked. Allow it in the browser's site settings."
           : "I did not hear anything. Tap the microphone and try again.",
       );
     };
-    recognition.onend = () => setListening(false);
+    recognition.onend = () => {
+      recognitionRef.current = null;
+      setListening(false);
+    };
     setListening(true);
     recognition.start();
   }
