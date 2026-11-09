@@ -15,6 +15,7 @@ import { listActiveCategories } from "@/lib/categories/queries";
 import { VoiceEntry } from "@/components/voice/voice-entry";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/components/category-icon";
 
 const PAGE_SIZE = 50;
 const PAYMENT_MODE_LABELS: Record<string, string> = Object.fromEntries(
@@ -148,17 +149,7 @@ export default async function TransactionsPage({
                       href={`/transactions/${t.id}/edit`}
                       className="hover:bg-muted/50 active:bg-muted flex items-center gap-3 px-4 py-3.5 transition-colors"
                     >
-                      <span
-                        className={cn(
-                          "flex size-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-                          isIncome
-                            ? "bg-emerald-500/10 text-emerald-600"
-                            : "bg-rose-500/10 text-rose-600",
-                        )}
-                        aria-hidden
-                      >
-                        {(t.categoryName ?? "?").charAt(0).toUpperCase()}
-                      </span>
+                      <CategoryIcon name={t.categoryName} kind={t.type} />
                       <span className="flex min-w-0 flex-1 flex-col">
                         <span className="truncate text-sm font-medium">
                           {t.categoryName ?? "Uncategorised"}

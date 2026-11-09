@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { CategoryIcon } from "@/components/category-icon";
 
 const PAYMENT_MODE_LABELS: Record<string, string> = Object.fromEntries(
   PAYMENT_MODES.map((m) => [m.value, m.label]),
@@ -303,16 +304,7 @@ export default async function Home() {
               className="hover:bg-muted/50 -mx-2 flex items-center justify-between gap-3 rounded-xl px-2 py-3 transition-colors"
             >
               <span className="flex min-w-0 items-center gap-3">
-                <span
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold",
-                    t.type === "income"
-                      ? "bg-emerald-500/10 text-emerald-600"
-                      : "bg-rose-500/10 text-rose-600",
-                  )}
-                >
-                  {(t.categoryName ?? "?").charAt(0).toUpperCase()}
-                </span>
+                <CategoryIcon name={t.categoryName} kind={t.type} />
                 <span className="flex min-w-0 flex-col">
                   <span className="truncate text-sm font-medium">
                     {t.categoryName ?? "Uncategorised"}
