@@ -19,7 +19,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -57,7 +56,7 @@ export function UserMenu({ email }: { email: string }) {
           <div className="text-muted-foreground truncate px-1.5 py-1 text-xs">{email}</div>
 
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-xs">Theme</DropdownMenuLabel>
+          <div className="text-muted-foreground px-1.5 pt-1 text-xs">Theme</div>
           <div className="grid grid-cols-3 gap-1 p-1">
             {THEME_OPTIONS.map(({ value, label, icon: Icon }) => (
               <button
