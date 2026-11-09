@@ -10,6 +10,7 @@ import {
   TargetIcon,
   type LucideIcon,
 } from "lucide-react";
+import { NavPending } from "@/components/nav-pending";
 import { cn } from "@/lib/utils";
 
 const TABS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -72,7 +73,10 @@ function Tab({
         )}
       >
         <Icon className="size-5" />
-        {label}
+        <span className="flex items-center gap-1">
+          {label}
+          <NavPending />
+        </span>
       </Link>
     </li>
   );

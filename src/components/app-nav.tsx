@@ -10,6 +10,7 @@ import {
   TargetIcon,
   type LucideIcon,
 } from "lucide-react";
+import { NavPending } from "@/components/nav-pending";
 import { cn } from "@/lib/utils";
 
 const LINKS: { href: string; label: string; icon: LucideIcon }[] = [
@@ -43,6 +44,7 @@ export function AppNav() {
           >
             <Icon className="size-4" />
             <span className="hidden md:inline">{link.label}</span>
+            <NavPending />
           </Link>
         );
       })}

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { AppNav } from "@/components/app-nav";
 import { UserMenu } from "@/components/user-menu";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
+import { PwaRegister } from "@/components/install-app";
 import { MobileNav } from "@/components/mobile-nav";
 import { AssistantPanel } from "@/components/assistant/assistant-panel";
 import { buttonVariants } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       </header>
       <KeyboardShortcuts />
+      <PwaRegister />
       <main className="mx-auto max-w-6xl px-5 pt-8 pb-28 sm:px-8 sm:pt-12 md:pb-16">
         {children}
       </main>

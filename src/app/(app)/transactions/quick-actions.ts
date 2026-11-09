@@ -12,6 +12,7 @@ export type QuickAddInput = {
   categoryId: string | null;
   occurredOn: string;
   paymentMode: string;
+  note?: string | null;
 };
 
 export async function addTransactionQuickAction(
@@ -24,6 +25,7 @@ export async function addTransactionQuickAction(
     categoryId: input.categoryId ?? "",
     occurredOn: input.occurredOn,
     paymentMode: input.paymentMode,
+    note: input.note ?? "",
   });
   if (!parsed.success)
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the entry" };

@@ -10,6 +10,7 @@ export interface VoiceEntry {
   categoryName: string | null;
   occurredOn: string;
   paymentMode: "cash" | "upi" | "debit_card" | "credit_card" | "net_banking" | "wallet" | "cheque";
+  note: string | null;
 }
 
 const UNITS: Record<string, number> = {
@@ -143,7 +144,34 @@ export function findCategory(
       if (match) return match;
     }
   }
+  for (const c of ordered) {
+    const distinctive = c.name
+      .toLowerCase()
+      .split(/[^a-z]+/)
+      .filter((w) => w.length >= 4 && !GENERIC_WORDS.has(w));
+    if (distinctive.some((w) => new RegExp(`\\b${w}\\b`).test(lower))) return c;
+  }
   return null;
+}
+
+const GENERIC_WORDS = new Set(["other", "eating", "with", "from", "that", "this"]);
+
+const NOTE_PATTERN = /\b(?:comment|note|remark)s?\b[:,]?\s*(?:saying\s+|that\s+)?/i;
+
+/** Separates a spoken comment ("comment for eggs") from the rest of the phrase. */
+export function splitNote(input: string): { body: string; note: string | null } {
+  const match = input.match(NOTE_PATTERN);
+  if (!match || match.index === undefined) return { body: input, note: null };
+  const note = input
+    .slice(match.index + match[0].length)
+    .replace(/^["'“‘]+|["'”’]+$/g, "")
+    .trim();
+  return { body: input.slice(0, match.index), note: note || null };
+}
+
+/** Speech recognisers often hear "for" as "4" between an amount and a word ("150 4 home"). */
+export function normalizeTranscript(input: string): string {
+  return input.replace(/(\d[\d,]*)\s+4\s+(?=[a-z])/gi, "$1 for ");
 }
 
 const MONTH_NAMES: Record<string, number> = {
@@ -209,9 +237,10 @@ export function extractDate(text: string, today: string): { date: string | null;
 }
 
 export function parseVoiceEntry(
-  text: string,
+  input: string,
   options: { categories: VoiceCategory[]; today: string },
 ): { ok: true; entry: VoiceEntry } | { ok: false; reason: string } {
+  const { body: text, note } = splitNote(normalizeTranscript(input));
   const { date, rest } = extractDate(text, options.today);
   const amount = parseSpokenAmount(rest);
   if (amount === null) {
@@ -238,6 +267,7 @@ export function parseVoiceEntry(
       categoryName: category?.name ?? null,
       occurredOn,
       paymentMode: payment ?? (type === "income" ? "net_banking" : "cash"),
+      note,
     },
   };
 }

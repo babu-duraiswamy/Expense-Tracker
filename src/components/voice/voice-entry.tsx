@@ -159,6 +159,7 @@ export function VoiceEntry({
         categoryId: entry.categoryId,
         occurredOn: entry.occurredOn,
         paymentMode: entry.paymentMode,
+        note: entry.note,
       });
       if (result.ok) {
         setPending(null);
@@ -330,6 +331,7 @@ function AddDialog({
   const [categoryId, setCategoryId] = useState<string | null>(draft.categoryId);
   const [occurredOn, setOccurredOn] = useState(draft.occurredOn || today);
   const [paymentMode, setPaymentMode] = useState<PaymentMode>(draft.paymentMode);
+  const [note, setNote] = useState(draft.note ?? "");
   const list = type === "expense" ? expenseCategories : incomeCategories;
   const selected = list.find((c) => c.id === categoryId);
   const amountMinor = (() => {
@@ -405,6 +407,17 @@ function AddDialog({
           </div>
 
           <div className="flex flex-col gap-1.5">
+            <Label htmlFor="voice-note">Comment (optional)</Label>
+            <Input
+              id="voice-note"
+              value={note}
+              maxLength={280}
+              onChange={(e) => setNote(e.target.value)}
+              className="h-10"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1.5">
             <Label>Payment mode</Label>
             <Select value={paymentMode} onValueChange={(v) => setPaymentMode(v as PaymentMode)}>
               <SelectTrigger className="h-10 w-full">
@@ -436,6 +449,7 @@ function AddDialog({
                 categoryName: selected?.name ?? null,
                 occurredOn,
                 paymentMode,
+                note: note.trim() || null,
               })
             }
           >

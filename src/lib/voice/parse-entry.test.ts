@@ -46,6 +46,7 @@ describe("parseVoiceEntry", () => {
         categoryName: "Entertainment",
         occurredOn: TODAY,
         paymentMode: "cash",
+        note: null,
       },
     });
   });
@@ -83,5 +84,42 @@ describe("parseVoiceEntry", () => {
   it("refuses an utterance with no amount", () => {
     const r = parseVoiceEntry("entertainment", { categories: CATS, today: TODAY });
     expect(r.ok).toBe(false);
+  });
+});
+
+describe("comments, categories and the for/4 mishearing", () => {
+  const PERSONAL = [{ id: "p1", name: "Personal care", kind: "expense" as const }, ...CATS];
+  const HOME = [{ id: "h1", name: "For Home", kind: "expense" as const }, ...CATS];
+
+  it("takes a spoken comment as the note, keeping its wording", () => {
+    const r = parseVoiceEntry("add personal care 830 expense comment For eggs", {
+      categories: PERSONAL,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry).toMatchObject({
+      amountMinor: 83000,
+      categoryName: "Personal care",
+      note: "For eggs",
+    });
+  });
+
+  it("keeps the note empty when none is spoken", () => {
+    const r = parseVoiceEntry("700 entertainment", { categories: CATS, today: TODAY });
+    expect(r.ok && r.entry.note).toBeNull();
+  });
+
+  it("matches 'home' to the category For Home", () => {
+    const r = parseVoiceEntry("add 150 for home", { categories: HOME, today: TODAY });
+    expect(r.ok && r.entry).toMatchObject({ amountMinor: 15000, categoryName: "For Home" });
+  });
+
+  it("reads 'for' that was heard as '4' between the amount and the category", () => {
+    const r = parseVoiceEntry("150 4 home", { categories: HOME, today: TODAY });
+    expect(r.ok && r.entry).toMatchObject({ amountMinor: 15000, categoryName: "For Home" });
+  });
+
+  it("does not turn a real amount ending in 4 into a word", () => {
+    const r = parseVoiceEntry("154 home", { categories: HOME, today: TODAY });
+    expect(r.ok && r.entry.amountMinor).toBe(15400);
   });
 });

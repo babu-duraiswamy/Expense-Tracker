@@ -2,6 +2,7 @@ import { toPaise } from "@/lib/money";
 import {
   extractDate,
   findCategory,
+  normalizeTranscript,
   parseSpokenAmount,
   parseVoiceEntry,
   type VoiceCategory,
@@ -25,7 +26,7 @@ export function parseVoiceCommand(
   text: string,
   options: { categories: VoiceCategory[]; today: string },
 ): { ok: true; command: VoiceCommand } | { ok: false; reason: string } {
-  const lower = text.toLowerCase();
+  const lower = normalizeTranscript(text).toLowerCase();
 
   if (DELETE_WORDS.test(lower)) {
     const { date, rest } = extractDate(text, options.today);
