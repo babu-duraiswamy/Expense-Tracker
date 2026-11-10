@@ -123,3 +123,64 @@ describe("comments, categories and the for/4 mishearing", () => {
     expect(r.ok && r.entry.amountMinor).toBe(15400);
   });
 });
+
+describe("amount, category and comment in order", () => {
+  const CATS_EATING = [
+    { id: "e1", name: "Eating Out", kind: "expense" as const },
+    { id: "e2", name: "For Home", kind: "expense" as const },
+    { id: "e3", name: "Personal care", kind: "expense" as const },
+  ];
+
+  it("reads '140 Eating Out Annapoorna' as amount, category and comment", () => {
+    const r = parseVoiceEntry("140 Eating Out Annapoorna", {
+      categories: CATS_EATING,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry).toMatchObject({
+      amountMinor: 14000,
+      categoryName: "Eating Out",
+      note: "Annapoorna",
+    });
+  });
+
+  it("reads a comment that comes before the category too", () => {
+    const r = parseVoiceEntry("add 830 personal care for eggs", {
+      categories: CATS_EATING,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry).toMatchObject({
+      amountMinor: 83000,
+      categoryName: "Personal care",
+      note: "for eggs",
+    });
+  });
+
+  it("keeps the spelling of the comment as spoken", () => {
+    const r = parseVoiceEntry("140 eating out Annapoorna", {
+      categories: CATS_EATING,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry.note).toBe("Annapoorna");
+  });
+
+  it("does not put payment or filler words into the comment", () => {
+    const r = parseVoiceEntry("add 140 eating out annapoorna upi", {
+      categories: CATS_EATING,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry).toMatchObject({ note: "annapoorna", paymentMode: "upi" });
+  });
+
+  it("finds 'for home' with the amount first and no comment left over", () => {
+    const r = parseVoiceEntry("add 150 for home", { categories: CATS_EATING, today: TODAY });
+    expect(r.ok && r.entry).toMatchObject({ categoryName: "For Home", note: null });
+  });
+
+  it("keeps the date out of the comment", () => {
+    const r = parseVoiceEntry("140 eating out annapoorna yesterday", {
+      categories: CATS_EATING,
+      today: TODAY,
+    });
+    expect(r.ok && r.entry).toMatchObject({ occurredOn: "2026-11-06", note: "annapoorna" });
+  });
+});

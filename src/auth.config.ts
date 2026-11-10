@@ -9,7 +9,7 @@ export const authConfig: NextAuthConfig = {
   // Required for self-hosting outside Vercel (which infers the host itself);
   // safe for a single-user app with no open registration.
   trustHost: true,
-  pages: { signIn: "/login" },
+  pages: { signIn: "/login", error: "/login" },
   providers: [],
   callbacks: {
     authorized({ auth, request }) {

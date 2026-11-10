@@ -60,6 +60,11 @@ const PAYMENT_WORDS: [RegExp, VoiceEntry["paymentMode"]][] = [
   [/\b(cash)\b/, "cash"],
 ];
 
+const PAYMENT_PHRASE =
+  /\b(upi|gpay|phonepe|paytm|net ?banking|bank transfer|neft|imps|debit card|debit|credit card|credit|wallet|cheque|check|cash)\b/gi;
+const FILLER_WORDS =
+  /\b(add|log|record|save|expense|expenses|income|spent|paid|received|salary|credited|earned|got|rupees|rupee|rs|the|a|an)\b/gi;
+
 const SYNONYMS: Record<string, string> = {
   food: "Food & dining",
   dining: "Food & dining",
@@ -83,6 +88,8 @@ const SYNONYMS: Record<string, string> = {
   shopping: "Shopping",
 };
 
+const GENERIC_WORDS = new Set(["other", "eating", "with", "from", "that", "this"]);
+
 function numberValue(token: string): number | null {
   const cleaned = token.replace(/,/g, "");
   if (/^\d+(\.\d{1,2})?$/.test(cleaned)) return Number(cleaned);
@@ -90,41 +97,89 @@ function numberValue(token: string): number | null {
   return null;
 }
 
-/** Turns "seven hundred", "2 thousand five hundred" or "1,200" into rupees. Stops at the first non-number after the amount starts. */
-export function parseSpokenAmount(text: string): number | null {
-  const tokens = text
-    .toLowerCase()
+function tokenize(text: string): string[] {
+  return text
     .replace(/[₹?!.]/g, " ")
     .split(/\s+/)
     .filter(Boolean);
+}
+
+/** Reads the amount from the start of a token list and reports which tokens it used. */
+function scanAmount(tokens: string[]): { amount: number | null; used: Set<number> } {
+  const used = new Set<number>();
   let total = 0;
   let current = 0;
   let started = false;
-  for (const token of tokens) {
-    if (token === "and" && started) continue;
-    if (token === "hundred" && started) {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]!.toLowerCase();
+    if (token === "and" && started) {
+      used.add(i);
+    } else if (token === "hundred" && started) {
       current = (current || 1) * 100;
-      continue;
-    }
-    if (SCALES[token] && started) {
+      used.add(i);
+    } else if (SCALES[token] && started) {
       total += (current || 1) * SCALES[token]!;
       current = 0;
-      continue;
-    }
-    const value = numberValue(token);
-    if (value !== null) {
+      used.add(i);
+    } else if (numberValue(token) !== null) {
       started = true;
-      current += value;
-      continue;
+      current += numberValue(token)!;
+      used.add(i);
+    } else if (started) {
+      break;
     }
-    if (started) break;
   }
   const amount = total + current;
-  return started && amount > 0 ? amount : null;
+  return { amount: started && amount > 0 ? amount : null, used };
+}
+
+/** Turns "seven hundred", "2 thousand five hundred" or "1,200" into rupees. Stops at the first non-number after the amount starts. */
+export function parseSpokenAmount(text: string): number | null {
+  return scanAmount(tokenize(text)).amount;
 }
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+type CategoryMatch = { category: VoiceCategory; index: number; length: number; exact: boolean };
+
+/** Finds the category named in the text and where in the text it was said. */
+export function findCategoryMatch(
+  text: string,
+  categories: VoiceCategory[],
+  kind: "expense" | "income",
+): CategoryMatch | null {
+  const pool = categories.filter((c) => c.kind === kind);
+  const ordered = [...pool].sort((a, b) => b.name.length - a.name.length);
+
+  const locate = (pattern: string): { index: number; length: number } | null => {
+    const m = text.match(new RegExp(`(^|[^a-z])(${pattern})(?![a-z])`, "i"));
+    return m && m.index !== undefined
+      ? { index: m.index + m[1]!.length, length: m[2]!.length }
+      : null;
+  };
+
+  for (const c of ordered) {
+    const hit = locate(escapeRegex(c.name));
+    if (hit) return { category: c, exact: true, ...hit };
+  }
+  for (const [word, target] of Object.entries(SYNONYMS)) {
+    const hit = locate(escapeRegex(word));
+    const match = hit && pool.find((c) => c.name === target);
+    if (hit && match) return { category: match, exact: false, ...hit };
+  }
+  for (const c of ordered) {
+    const distinctive = c.name
+      .toLowerCase()
+      .split(/[^a-z]+/)
+      .filter((w) => w.length >= 4 && !GENERIC_WORDS.has(w));
+    for (const word of distinctive) {
+      const hit = locate(word);
+      if (hit) return { category: c, exact: false, ...hit };
+    }
+  }
+  return null;
 }
 
 export function findCategory(
@@ -132,29 +187,8 @@ export function findCategory(
   categories: VoiceCategory[],
   kind: "expense" | "income",
 ): VoiceCategory | null {
-  const pool = categories.filter((c) => c.kind === kind);
-  const ordered = [...pool].sort((a, b) => b.name.length - a.name.length);
-  for (const c of ordered) {
-    if (new RegExp(`(^|[^a-z])${escapeRegex(c.name.toLowerCase())}($|[^a-z])`).test(lower))
-      return c;
-  }
-  for (const [word, target] of Object.entries(SYNONYMS)) {
-    if (new RegExp(`\\b${escapeRegex(word)}\\b`).test(lower)) {
-      const match = pool.find((c) => c.name === target);
-      if (match) return match;
-    }
-  }
-  for (const c of ordered) {
-    const distinctive = c.name
-      .toLowerCase()
-      .split(/[^a-z]+/)
-      .filter((w) => w.length >= 4 && !GENERIC_WORDS.has(w));
-    if (distinctive.some((w) => new RegExp(`\\b${w}\\b`).test(lower))) return c;
-  }
-  return null;
+  return findCategoryMatch(lower, categories, kind)?.category ?? null;
 }
-
-const GENERIC_WORDS = new Set(["other", "eating", "with", "from", "that", "this"]);
 
 const NOTE_PATTERN = /\b(?:comment|note|remark)s?\b[:,]?\s*(?:saying\s+|that\s+)?/i;
 
@@ -203,46 +237,58 @@ const MONTH_NAMES: Record<string, number> = {
 const MONTH_PATTERN = Object.keys(MONTH_NAMES).join("|");
 const DAY_THEN_MONTH = new RegExp(
   `\\b(\\d{1,2})(?:st|nd|rd|th)?\\s+(?:of\\s+)?(${MONTH_PATTERN})\\b`,
+  "i",
 );
-const MONTH_THEN_DAY = new RegExp(`\\b(${MONTH_PATTERN})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`);
+const MONTH_THEN_DAY = new RegExp(`\\b(${MONTH_PATTERN})\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, "i");
 
 function isoDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-/** Pulls a spoken date ("today", "yesterday", "5 november", "november 5th") out of the text. */
+/** Pulls a spoken date ("today", "yesterday", "5 november", "november 5th") out of the text. Keeps the rest's wording. */
 export function extractDate(text: string, today: string): { date: string | null; rest: string } {
-  const lower = text.toLowerCase();
   const year = Number(today.slice(0, 4));
 
-  const dayFirst = lower.match(DAY_THEN_MONTH);
+  const dayFirst = text.match(DAY_THEN_MONTH);
   if (dayFirst) {
     return {
-      date: isoDate(year, MONTH_NAMES[dayFirst[2]!]!, Number(dayFirst[1])),
-      rest: lower.replace(dayFirst[0], " "),
+      date: isoDate(year, MONTH_NAMES[dayFirst[2]!.toLowerCase()]!, Number(dayFirst[1])),
+      rest: text.replace(dayFirst[0], " "),
     };
   }
-  const monthFirst = lower.match(MONTH_THEN_DAY);
+  const monthFirst = text.match(MONTH_THEN_DAY);
   if (monthFirst) {
     return {
-      date: isoDate(year, MONTH_NAMES[monthFirst[1]!]!, Number(monthFirst[2])),
-      rest: lower.replace(monthFirst[0], " "),
+      date: isoDate(year, MONTH_NAMES[monthFirst[1]!.toLowerCase()]!, Number(monthFirst[2])),
+      rest: text.replace(monthFirst[0], " "),
     };
   }
-  if (/\byesterday\b/.test(lower)) {
-    return { date: yesterdayOf(today), rest: lower.replace(/\byesterday\b/, " ") };
+  if (/\byesterday\b/i.test(text)) {
+    return { date: yesterdayOf(today), rest: text.replace(/\byesterday\b/i, " ") };
   }
-  if (/\btoday\b/.test(lower)) return { date: today, rest: lower.replace(/\btoday\b/, " ") };
-  return { date: null, rest: lower };
+  if (/\btoday\b/i.test(text)) return { date: today, rest: text.replace(/\btoday\b/i, " ") };
+  return { date: null, rest: text };
+}
+
+/** Whatever is left after the amount and category, with payment and filler words removed. */
+function cleanComment(text: string): string {
+  return text
+    .replace(PAYMENT_PHRASE, " ")
+    .replace(FILLER_WORDS, " ")
+    .replace(/[,;:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function parseVoiceEntry(
   input: string,
   options: { categories: VoiceCategory[]; today: string },
 ): { ok: true; entry: VoiceEntry } | { ok: false; reason: string } {
-  const { body: text, note } = splitNote(normalizeTranscript(input));
-  const { date, rest } = extractDate(text, options.today);
-  const amount = parseSpokenAmount(rest);
+  const { body, note: keywordNote } = splitNote(normalizeTranscript(input));
+  const { date, rest } = extractDate(body, options.today);
+
+  const tokens = tokenize(rest);
+  const { amount, used } = scanAmount(tokens);
   if (amount === null) {
     return {
       ok: false,
@@ -250,24 +296,30 @@ export function parseVoiceEntry(
     };
   }
 
-  const lower = text.toLowerCase();
+  const lower = body.toLowerCase();
   const type = /\b(income|received|salary|credited|earned|got paid)\b/.test(lower)
     ? "income"
     : "expense";
-  const category = findCategory(lower, options.categories, type);
+
+  let remaining = tokens.filter((_, i) => !used.has(i)).join(" ");
+  const match = findCategoryMatch(remaining, options.categories, type);
+  if (match) {
+    remaining = remaining.slice(0, match.index) + " " + remaining.slice(match.index + match.length);
+  }
+  let comment = cleanComment(remaining);
+  if (match && !match.exact) comment = comment.replace(/^for\s+/i, "");
   const payment = PAYMENT_WORDS.find(([re]) => re.test(lower))?.[1];
-  const occurredOn = date ?? options.today;
 
   return {
     ok: true,
     entry: {
       type,
       amountMinor: toPaise(amount.toString()),
-      categoryId: category?.id ?? null,
-      categoryName: category?.name ?? null,
-      occurredOn,
+      categoryId: match?.category.id ?? null,
+      categoryName: match?.category.name ?? null,
+      occurredOn: date ?? options.today,
       paymentMode: payment ?? (type === "income" ? "net_banking" : "cash"),
-      note,
+      note: keywordNote ?? (comment || null),
     },
   };
 }

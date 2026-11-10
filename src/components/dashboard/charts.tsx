@@ -88,10 +88,6 @@ export function CategoryDonut({ data }: { data: { name: string; totalMinor: numb
                 <Cell key={d.name} fill={CHART_PALETTE[i % CHART_PALETTE.length]} />
               ))}
             </Pie>
-            <Tooltip
-              contentStyle={{ borderRadius: 12, border: "1px solid var(--border)", fontSize: 12 }}
-              formatter={(value) => formatINR(Number(value))}
-            />
           </PieChart>
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
@@ -111,7 +107,12 @@ export function CategoryDonut({ data }: { data: { name: string; totalMinor: numb
                 />
                 <span className="truncate">{d.name}</span>
               </span>
-              <span className="text-muted-foreground shrink-0 tabular-nums">{pct.toFixed(0)}%</span>
+              <span className="flex shrink-0 items-baseline gap-2 tabular-nums">
+                <span className="font-medium">{formatINR(d.totalMinor, { whole: true })}</span>
+                <span className="text-muted-foreground w-9 text-right text-xs">
+                  {pct.toFixed(0)}%
+                </span>
+              </span>
             </li>
           );
         })}

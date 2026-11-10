@@ -3,6 +3,10 @@
 import { AuthError } from "next-auth";
 import { signIn } from "@/auth";
 
+export async function googleLoginAction(): Promise<void> {
+  await signIn("google", { redirectTo: "/" });
+}
+
 export async function loginAction(
   _prevState: string | undefined,
   formData: FormData,

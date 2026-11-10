@@ -7,7 +7,21 @@ const HIGHLIGHTS = [
   { icon: PiggyBankIcon, text: "Budgets and tips that point to real savings" },
 ];
 
-export default function LoginPage() {
+const ERROR_NOTICES: Record<string, string> = {
+  AccessDenied: "This Google account isn't allowed to sign in.",
+  Configuration: "Google sign-in isn't set up correctly. Use your password for now.",
+  Default: "Sign-in didn't work. Please try again.",
+};
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
+  const notice = error ? (ERROR_NOTICES[error] ?? ERROR_NOTICES.Default) : undefined;
+  const googleEnabled = Boolean(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET);
+
   return (
     <main className="via-background relative flex min-h-dvh items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-50 to-violet-50 p-6 dark:from-indigo-950/40 dark:to-violet-950/40">
       <div className="pointer-events-none absolute -top-32 -left-32 size-96 rounded-full bg-indigo-400/20 blur-3xl" />
@@ -50,7 +64,7 @@ export default function LoginPage() {
               <CardDescription>Sign in to continue to your dashboard.</CardDescription>
             </CardHeader>
             <CardContent>
-              <LoginForm />
+              <LoginForm googleEnabled={googleEnabled} notice={notice} />
             </CardContent>
           </Card>
         </div>
