@@ -71,7 +71,7 @@ export function CategoryDonut({ data }: { data: { name: string; totalMinor: numb
   const total = data.reduce((sum, d) => sum + d.totalMinor, 0);
 
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row">
+    <div className="flex w-full flex-col items-center gap-5">
       <div className="relative h-44 w-44 shrink-0">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
