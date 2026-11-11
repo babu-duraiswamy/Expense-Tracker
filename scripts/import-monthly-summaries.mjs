@@ -32,6 +32,8 @@ const EXPENSE_CATEGORIES = {
   "Paddlerz Coaching": { name: "Paddlerz Coaching", needOrWant: "need" },
   Travel: { name: "Travel", needOrWant: "want" },
   Gifts: { name: "Gifts", needOrWant: "want" },
+  "Mutual Funds": { name: "Mutual Funds", needOrWant: "need" },
+  "Home loan": { name: "Home loan", needOrWant: "need" },
 };
 const SKIPPED = new Set(["Investment"]);
 
@@ -108,6 +110,13 @@ for (const m of data.months) {
     const target = EXPENSE_CATEGORIES[source]?.name ?? source;
     perCategory.set(target, (perCategory.get(target) ?? 0) + amount);
   }
+  for (const [field, label] of [
+    ["mutualFunds", "Mutual Funds"],
+    ["homeLoan", "Home loan"],
+  ]) {
+    const amount = m[field] ?? 0;
+    if (amount > 0) perCategory.set(label, (perCategory.get(label) ?? 0) + amount);
+  }
   for (const [name, amount] of perCategory) {
     if (amount <= 0) continue;
     await sql.query(
@@ -122,4 +131,4 @@ for (const m of data.months) {
 }
 
 console.log(`Inserted ${inserted} transactions for ${email}.`);
-console.log(`Skipped Investment totals (not split yet): ${skippedInvestment}`);
+console.log(`Left out, unexplained Investment remainder: ${skippedInvestment}`);
