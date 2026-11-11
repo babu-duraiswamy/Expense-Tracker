@@ -72,6 +72,7 @@ export default async function Home() {
   const period = thisMonth(today);
   const previous = previousPeriod(period);
   const window = sixMonthWindow(today);
+  const monthQuery = `from=${period.start}&to=${period.end}`;
 
   const [
     summary,
@@ -149,6 +150,7 @@ export default async function Home() {
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Income"
+          href={`/transactions?type=income&${monthQuery}`}
           value={formatINR(summary.incomeMinor)}
           icon={TrendingUpIcon}
           tone="income"
@@ -156,6 +158,7 @@ export default async function Home() {
         />
         <StatCard
           label="Expenses"
+          href={`/transactions?type=expense&${monthQuery}`}
           value={formatINR(summary.expenseMinor)}
           icon={TrendingDownIcon}
           tone="expense"
@@ -164,6 +167,7 @@ export default async function Home() {
         />
         <StatCard
           label="Net savings"
+          href={`/transactions?${monthQuery}`}
           value={formatINR(summary.netMinor)}
           icon={WalletIcon}
           tone="accent"
@@ -171,6 +175,7 @@ export default async function Home() {
         />
         <StatCard
           label="Savings rate"
+          href="/reports"
           value={summary.savingsRate === null ? "—" : `${(summary.savingsRate * 100).toFixed(0)}%`}
           icon={PiggyBankIcon}
           tone="neutral"
