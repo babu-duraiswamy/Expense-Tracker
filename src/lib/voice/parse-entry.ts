@@ -86,6 +86,9 @@ const SYNONYMS: Record<string, string> = {
   electricity: "Utilities",
   bill: "Utilities",
   shopping: "Shopping",
+  sip: "Mutual Funds",
+  "mutual fund": "Mutual Funds",
+  emi: "Home loan",
 };
 
 const GENERIC_WORDS = new Set(["other", "eating", "with", "from", "that", "this"]);

@@ -184,3 +184,20 @@ describe("amount, category and comment in order", () => {
     expect(r.ok && r.entry).toMatchObject({ occurredOn: "2026-11-06", note: "annapoorna" });
   });
 });
+
+describe("investment names said aloud", () => {
+  const INVEST = [
+    { id: "m1", name: "Mutual Funds", kind: "expense" as const },
+    { id: "h1", name: "Home loan", kind: "expense" as const },
+  ];
+
+  it("reads '10000 SIP' as Mutual Funds", () => {
+    const r = parseVoiceEntry("10000 SIP", { categories: INVEST, today: TODAY });
+    expect(r.ok && r.entry).toMatchObject({ amountMinor: 1000000, categoryName: "Mutual Funds" });
+  });
+
+  it("reads '4000 EMI' as Home loan", () => {
+    const r = parseVoiceEntry("4000 EMI", { categories: INVEST, today: TODAY });
+    expect(r.ok && r.entry).toMatchObject({ amountMinor: 400000, categoryName: "Home loan" });
+  });
+});
