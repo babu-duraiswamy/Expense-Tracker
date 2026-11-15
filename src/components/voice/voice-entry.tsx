@@ -127,17 +127,29 @@ export function VoiceEntry({
     setMessage(null);
     // Chrome and Edge send the audio to the browser vendor's speech service for transcription.
     const recognition = new Ctor();
+    // Make the new session current *before* aborting any old one, so the old session's
+    // late events are recognised as stale and can't reset this session's state.
+    const previous = recognitionRef.current;
     recognitionRef.current = recognition;
+    previous?.abort();
+    const isCurrent = () => recognitionRef.current === recognition;
     recognition.lang = "en-IN";
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (event) => {
+      if (!isCurrent()) return;
+      recognitionRef.current = null;
       recognition.stop();
+      setListening(false);
       handleCommand(event.results[0]?.[0]?.transcript ?? "");
     };
     recognition.onerror = (event) => {
+      if (!isCurrent()) return;
+      recognitionRef.current = null;
       recognition.stop();
+      setListening(false);
+      if (event.error === "aborted") return;
       setMessage(
         event.error === "not-allowed"
           ? "Microphone access is blocked. Allow it in the browser's site settings."
@@ -145,11 +157,25 @@ export function VoiceEntry({
       );
     };
     recognition.onend = () => {
+      if (!isCurrent()) return;
       recognitionRef.current = null;
       setListening(false);
     };
     setListening(true);
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      recognitionRef.current = null;
+      setListening(false);
+      setMessage("Could not start the microphone. Tap it to try again.");
+    }
+  }
+
+  function cancelListening() {
+    const current = recognitionRef.current;
+    recognitionRef.current = null;
+    current?.abort();
+    setListening(false);
   }
 
   function saveEntry(entry: VoiceEntry) {
@@ -209,7 +235,12 @@ export function VoiceEntry({
         <span className="hidden text-sm sm:inline">{listening ? "Listening…" : "Speak"}</span>
       </Button>
 
-      {(listening || busy) && !pending && <VoiceOrb state={listening ? "listening" : "working"} />}
+      {(listening || busy) && !pending && (
+        <VoiceOrb
+          state={listening ? "listening" : "working"}
+          onCancel={listening ? cancelListening : undefined}
+        />
+      )}
 
       {message && (
         <div

@@ -99,11 +99,20 @@ export default async function Home() {
 
   const topTips = rankInsights(insights, 3);
 
-  const topCategories = breakdown
-    .slice(0, 5)
-    .map((c) => ({ name: c.categoryName, totalMinor: c.totalMinor }));
-  const restMinor = breakdown.slice(5).reduce((sum, c) => sum + c.totalMinor, 0);
-  if (restMinor > 0) topCategories.push({ name: "Other", totalMinor: restMinor });
+  const topCategories = breakdown.slice(0, 5).map((c) => ({
+    name: c.categoryName,
+    totalMinor: c.totalMinor,
+    categoryIds: [c.categoryId],
+  }));
+  const rest = breakdown.slice(5);
+  const restMinor = rest.reduce((sum, c) => sum + c.totalMinor, 0);
+  if (restMinor > 0) {
+    topCategories.push({
+      name: "Other",
+      totalMinor: restMinor,
+      categoryIds: rest.map((c) => c.categoryId),
+    });
+  }
 
   const prevRate = prevSummary.savingsRate;
   const rateDelta =
@@ -207,7 +216,7 @@ export default async function Home() {
                 No expenses yet this month.
               </p>
             ) : (
-              <CategoryDonut data={topCategories} />
+              <CategoryDonut data={topCategories} from={period.start} to={period.end} />
             )}
           </CardContent>
         </Card>

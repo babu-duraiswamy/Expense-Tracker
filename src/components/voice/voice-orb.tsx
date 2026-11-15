@@ -2,7 +2,13 @@
  * Siri-style full-screen indicator shown while the mic is listening or a voice
  * command is being processed. Purely visual; the animations live in globals.css.
  */
-export function VoiceOrb({ state }: { state: "listening" | "working" }) {
+export function VoiceOrb({
+  state,
+  onCancel,
+}: {
+  state: "listening" | "working";
+  onCancel?: () => void;
+}) {
   return (
     <div
       role="status"
@@ -17,6 +23,15 @@ export function VoiceOrb({ state }: { state: "listening" | "working" }) {
       <p className="text-lg font-medium text-white">
         {state === "listening" ? "Listening…" : "Working on it…"}
       </p>
+      {onCancel && (
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-full bg-white/15 px-5 py-2 text-sm font-medium text-white hover:bg-white/25"
+        >
+          Cancel
+        </button>
+      )}
     </div>
   );
 }
