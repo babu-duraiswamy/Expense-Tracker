@@ -127,3 +127,92 @@
     @apply font-sans;
   }
 }
+
+/* Siri-style voice indicator (see src/components/voice/voice-orb.tsx) */
+.voice-orb {
+  position: relative;
+  width: 9rem;
+  height: 9rem;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #0b0b1a;
+  box-shadow:
+    0 0 40px 8px rgb(99 102 241 / 0.55),
+    0 0 90px 24px rgb(236 72 153 / 0.35);
+  animation: voice-orb-breathe 2.4s ease-in-out infinite;
+}
+.voice-orb[data-state="working"] {
+  animation-duration: 1s;
+}
+.voice-orb-blob {
+  position: absolute;
+  width: 80%;
+  height: 80%;
+  border-radius: 9999px;
+  filter: blur(18px);
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+.voice-orb-blob-a {
+  background: #38bdf8;
+  top: -10%;
+  left: -10%;
+  animation: voice-orb-swirl-a 3.2s ease-in-out infinite;
+}
+.voice-orb-blob-b {
+  background: #ec4899;
+  bottom: -10%;
+  right: -10%;
+  animation: voice-orb-swirl-b 2.6s ease-in-out infinite;
+}
+.voice-orb-blob-c {
+  background: #8b5cf6;
+  top: 20%;
+  left: 20%;
+  animation: voice-orb-swirl-c 3.8s ease-in-out infinite;
+}
+.voice-orb[data-state="working"] .voice-orb-blob {
+  animation-duration: 1.2s;
+}
+@keyframes voice-orb-breathe {
+  0%,
+  100% {
+    transform: scale(0.94);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+}
+@keyframes voice-orb-swirl-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(45%, 35%) scale(1.15);
+  }
+}
+@keyframes voice-orb-swirl-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-45%, -30%) scale(1.2);
+  }
+}
+@keyframes voice-orb-swirl-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1.1);
+  }
+  50% {
+    transform: translate(-30%, 40%) scale(0.9);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .voice-orb,
+  .voice-orb-blob {
+    animation: none;
+  }
+}

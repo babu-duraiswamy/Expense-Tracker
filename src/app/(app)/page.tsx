@@ -55,9 +55,8 @@ function greeting(now: Date): string {
   return "Good evening";
 }
 
-function firstName(email: string | null | undefined): string {
-  const local = email?.split("@")[0] ?? "there";
-  return local.charAt(0).toUpperCase() + local.slice(1);
+function firstName(name: string | null | undefined): string {
+  return name?.trim().split(/\s+/)[0] || "there";
 }
 
 function sixMonthWindow(today: string) {
@@ -118,7 +117,7 @@ export default async function Home() {
         <div>
           <p className="text-muted-foreground text-sm">{longDate.format(now)}</p>
           <h1 className="text-3xl font-semibold tracking-tight">
-            {greeting(now)}, {firstName(session?.user?.email)}
+            {greeting(now)}, {firstName(session?.user?.name)}
           </h1>
           <p className="text-muted-foreground mt-1 text-sm">Here is where {period.label} stands.</p>
         </div>

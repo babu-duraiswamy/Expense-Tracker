@@ -11,6 +11,7 @@ import { formatINR, paiseToInput, toPaise } from "@/lib/money";
 import { parseVoiceCommand, type VoiceCommand } from "@/lib/voice/command";
 import type { VoiceCategory, VoiceEntry } from "@/lib/voice/parse-entry";
 import type { TransactionMatch } from "@/lib/transactions/find";
+import { VoiceOrb } from "@/components/voice/voice-orb";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -207,6 +208,8 @@ export function VoiceEntry({
         <MicIcon className={cn("size-4", listening && "animate-pulse text-rose-600")} />
         <span className="hidden text-sm sm:inline">{listening ? "Listening…" : "Speak"}</span>
       </Button>
+
+      {(listening || busy) && !pending && <VoiceOrb state={listening ? "listening" : "working"} />}
 
       {message && (
         <div

@@ -4,7 +4,7 @@ import { PlusIcon } from "lucide-react";
 import { useActionState, useState } from "react";
 import type { Category, Transaction } from "@/db/schema";
 import { NEED_OR_WANT_LABELS, PAYMENT_MODES, type PaymentMode } from "@/lib/constants";
-import { paiseToInput } from "@/lib/money";
+import { formatINR, paiseToInput, toPaise } from "@/lib/money";
 import { createTransactionAction, updateTransactionAction } from "@/app/(app)/transactions/actions";
 import { NewCategoryDialog } from "@/components/transactions/new-category-dialog";
 import { Button } from "@/components/ui/button";
@@ -67,7 +67,17 @@ export function TransactionForm(props: Props) {
   });
   const [categoryId, setCategoryId] = useState<string | null>(transaction?.categoryId ?? null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [amount, setAmount] = useState(transaction ? paiseToInput(transaction.amountMinor) : "");
   const categories = lists[type];
+  // When the user types a sum like "30 + 40", show the total. The server re-parses the text.
+  const sumTotal = (() => {
+    if (!amount.includes("+")) return null;
+    try {
+      return toPaise(amount);
+    } catch {
+      return null;
+    }
+  })();
 
   function switchType(next: TxnType) {
     setType(next);
@@ -112,13 +122,18 @@ export function TransactionForm(props: Props) {
         <Input
           id="amount"
           name="amountMinor"
-          inputMode="decimal"
-          placeholder="0.00"
+          inputMode="text"
+          autoComplete="off"
+          placeholder="0.00 or 30 + 40 + 100"
           className="h-12 text-lg font-semibold"
-          defaultValue={transaction ? paiseToInput(transaction.amountMinor) : undefined}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
           autoFocus={mode === "create"}
           required
         />
+        {sumTotal !== null && (
+          <p className="text-muted-foreground text-sm">= {formatINR(sumTotal)}</p>
+        )}
       </div>
 
       <div className="flex flex-col gap-1.5">

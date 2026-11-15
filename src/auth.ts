@@ -37,7 +37,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (email.trim().toLowerCase() !== expectedEmail.toLowerCase()) return null;
         if (!verifyPassword(password, expectedHash)) return null;
 
-        return { id: expectedEmail, email: expectedEmail };
+        return {
+          id: expectedEmail,
+          email: expectedEmail,
+          name: process.env.AUTH_USER_NAME?.trim() || null,
+        };
       },
     }),
   ],

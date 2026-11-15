@@ -4,21 +4,30 @@
 
 const AMOUNT_RE = /^\d+(\.\d{1,2})?$/;
 
-/**
- * Parse a user-entered rupee amount into paise without floating-point maths.
- * Accepts "249", "249.5", "249.50", "1,23,456.78". Throws on invalid input.
- */
-export function toPaise(input: string): number {
-  const cleaned = input.trim().replace(/[₹,\s]/g, "");
+function singleToPaise(part: string, original: string): number {
+  const cleaned = part.replace(/[₹,\s]/g, "");
   if (!AMOUNT_RE.test(cleaned)) {
-    throw new Error(`Invalid amount: "${input}"`);
+    throw new Error(`Invalid amount: "${original}"`);
   }
   const [rupees = "0", fraction = ""] = cleaned.split(".");
   const paise = Number(rupees) * 100 + Number(fraction.padEnd(2, "0"));
   if (!Number.isSafeInteger(paise)) {
-    throw new Error(`Amount too large: "${input}"`);
+    throw new Error(`Amount too large: "${original}"`);
   }
   return paise;
+}
+
+/**
+ * Parse a user-entered rupee amount into paise without floating-point maths.
+ * Accepts "249", "249.5", "249.50", "1,23,456.78", and sums like "30 + 40 + 100"
+ * (each part is converted to paise first, then added). Throws on invalid input.
+ */
+export function toPaise(input: string): number {
+  const total = input.split("+").reduce((sum, part) => sum + singleToPaise(part, input), 0);
+  if (!Number.isSafeInteger(total)) {
+    throw new Error(`Amount too large: "${input}"`);
+  }
+  return total;
 }
 
 const inrFormatter = new Intl.NumberFormat("en-IN", {

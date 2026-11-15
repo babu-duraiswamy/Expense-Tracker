@@ -13,6 +13,19 @@ describe("toPaise", () => {
     expect(toPaise(input)).toBe(expected);
   });
 
+  it.each([
+    ["30 + 40 + 100", 17000],
+    ["30+40+100", 17000],
+    ["0.1 + 0.2", 30],
+    ["1,000 + 250.50", 125050],
+  ])("sums %s → %i", (input, expected) => {
+    expect(toPaise(input)).toBe(expected);
+  });
+
+  it.each(["30 +", "+30", "30 + + 40", "30 + abc"])("rejects incomplete sum %s", (input) => {
+    expect(() => toPaise(input)).toThrow();
+  });
+
   it("avoids float errors (0.1 + 0.2 style)", () => {
     expect(toPaise("0.29")).toBe(29);
     expect(toPaise("1.15")).toBe(115);
