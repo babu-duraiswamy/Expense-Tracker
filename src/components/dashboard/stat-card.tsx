@@ -5,11 +5,27 @@ import { cn } from "@/lib/utils";
 
 type Tone = "income" | "expense" | "neutral" | "accent";
 
-const TONE_CLASSES: Record<Tone, { icon: string; value: string }> = {
-  income: { icon: "bg-emerald-500/10 text-emerald-600", value: "text-emerald-600" },
-  expense: { icon: "bg-rose-500/10 text-rose-600", value: "text-rose-600" },
-  neutral: { icon: "bg-slate-500/10 text-slate-600", value: "text-foreground" },
-  accent: { icon: "bg-indigo-500/10 text-indigo-600", value: "text-foreground" },
+const TONE_CLASSES: Record<Tone, { icon: string; value: string; card: string }> = {
+  income: {
+    icon: "bg-emerald-500/15 text-emerald-600",
+    value: "text-emerald-600",
+    card: "from-emerald-50 dark:from-emerald-500/10",
+  },
+  expense: {
+    icon: "bg-rose-500/15 text-rose-600",
+    value: "text-rose-600",
+    card: "from-rose-50 dark:from-rose-500/10",
+  },
+  neutral: {
+    icon: "bg-sky-500/15 text-sky-600",
+    value: "text-foreground",
+    card: "from-sky-50 dark:from-sky-500/10",
+  },
+  accent: {
+    icon: "bg-indigo-500/15 text-indigo-600",
+    value: "text-foreground",
+    card: "from-indigo-50 dark:from-indigo-500/10",
+  },
 };
 
 /**
@@ -92,8 +108,10 @@ export function StatCard({
     </>
   );
 
-  const className =
-    "bg-card ring-foreground/5 flex flex-col gap-3 rounded-2xl p-5 shadow-sm ring-1";
+  const className = cn(
+    "to-card bg-gradient-to-br ring-foreground/5 flex flex-col gap-3 rounded-2xl p-5 shadow-sm ring-1",
+    TONE_CLASSES[tone].card,
+  );
   if (!href) return <div className={className}>{body}</div>;
   return (
     <Link

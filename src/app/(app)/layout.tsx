@@ -14,7 +14,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const session = await auth();
 
   return (
-    <div className="via-background to-background min-h-dvh bg-gradient-to-b from-indigo-50/60 dark:from-indigo-950/20">
+    <div className="app-backdrop min-h-dvh">
       <header className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-40 border-b backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
           <Link href="/" className="flex shrink-0 items-center gap-2.5">

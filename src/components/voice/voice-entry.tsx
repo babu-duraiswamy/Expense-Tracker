@@ -56,6 +56,16 @@ function getRecognitionConstructor(): RecognitionConstructor | null {
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
 
+/** True only when the user has really blocked the mic (not merely dismissed the prompt). */
+async function micIsBlocked(): Promise<boolean> {
+  try {
+    const status = await navigator.permissions.query({ name: "microphone" as PermissionName });
+    return status.state === "denied";
+  } catch {
+    return false; // Browser can't tell us: treat as "ask again" rather than "blocked".
+  }
+}
+
 const PAYMENT_LABELS = Object.fromEntries(PAYMENT_MODES.map((m) => [m.value, m.label])) as Record<
   PaymentMode,
   string
@@ -150,11 +160,19 @@ export function VoiceEntry({
       recognition.stop();
       setListening(false);
       if (event.error === "aborted") return;
-      setMessage(
-        event.error === "not-allowed"
-          ? "Microphone access is blocked. Allow it in the browser's site settings."
-          : "I did not hear anything. Tap the microphone to try again.",
-      );
+      if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+        // Chrome reports a dismissed prompt and a real "Block" the same way, so ask the
+        // browser which one it is. Only a genuine denial is called "blocked".
+        micIsBlocked().then((blocked) =>
+          setMessage(
+            blocked
+              ? "Microphone access is blocked. Allow it in the browser's site settings."
+              : "Microphone permission wasn't granted. Tap the microphone to be asked again.",
+          ),
+        );
+        return;
+      }
+      setMessage("I did not hear anything. Tap the microphone to try again.");
     };
     recognition.onend = () => {
       if (!isCurrent()) return;
@@ -402,7 +420,7 @@ function AddDialog({
           </ToggleGroup>
 
           <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="voice-amount">Amount (₹)</Label>
               <Input
                 id="voice-amount"
@@ -412,14 +430,14 @@ function AddDialog({
                 className="h-10"
               />
             </div>
-            <div className="flex flex-col gap-1.5">
+            <div className="flex min-w-0 flex-col gap-1.5">
               <Label htmlFor="voice-date">Date</Label>
               <Input
                 id="voice-date"
                 type="date"
                 value={occurredOn}
                 onChange={(e) => setOccurredOn(e.target.value)}
-                className="h-10"
+                className="h-10 min-w-0"
               />
             </div>
           </div>
