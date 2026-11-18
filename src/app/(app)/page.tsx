@@ -21,7 +21,7 @@ import { VoiceEntry } from "@/components/voice/voice-entry";
 import { computeInsightsForPeriod } from "@/lib/insights/engine";
 import { rankInsights, renderTip } from "@/lib/insights/tips";
 import { PAYMENT_MODES } from "@/lib/constants";
-import { CategoryDonut, TrendBars } from "@/components/dashboard/charts";
+import { CategoryDonut, TrendBars, type DonutSlice } from "@/components/dashboard/charts";
 import { StatCard } from "@/components/dashboard/stat-card";
 import { BudgetCard } from "@/components/budgets/budget-card";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +99,7 @@ export default async function Home() {
 
   const topTips = rankInsights(insights, 3);
 
-  const topCategories = breakdown.slice(0, 5).map((c) => ({
+  const topCategories: DonutSlice[] = breakdown.slice(0, 5).map((c) => ({
     name: c.categoryName,
     totalMinor: c.totalMinor,
     categoryIds: [c.categoryId],
@@ -111,6 +111,11 @@ export default async function Home() {
       name: "Other",
       totalMinor: restMinor,
       categoryIds: rest.map((c) => c.categoryId),
+      children: rest.map((c) => ({
+        categoryId: c.categoryId,
+        name: c.categoryName,
+        totalMinor: c.totalMinor,
+      })),
     });
   }
 

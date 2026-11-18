@@ -12,6 +12,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
   listCategoryTransactionsAction,
@@ -81,7 +82,13 @@ export function TrendBars({
   );
 }
 
-export type DonutSlice = { name: string; totalMinor: number; categoryIds: string[] };
+export type DonutSlice = {
+  name: string;
+  totalMinor: number;
+  categoryIds: string[];
+  /** Set on the grouped "Other" slice: the categories it is made of. */
+  children?: { categoryId: string; name: string; totalMinor: number }[];
+};
 
 export function CategoryDonut({
   data,
@@ -183,6 +190,65 @@ function CategoryTransactionsDialog({
   to: string;
   onClose: () => void;
 }) {
+  // "Other" first lists its categories; picking one drills into that category alone.
+  const [drill, setDrill] = useState<DonutSlice | null>(null);
+  const active = drill ?? (slice.children ? null : slice);
+  const shown = active ?? slice;
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          {drill && (
+            <button
+              type="button"
+              onClick={() => setDrill(null)}
+              className="text-muted-foreground hover:text-foreground flex w-fit items-center gap-1 text-xs"
+            >
+              <ChevronLeftIcon className="size-3.5" />
+              Back to {slice.name}
+            </button>
+          )}
+          <DialogTitle className="flex items-center gap-2">
+            <span className="size-3 rounded-full" style={{ background: color }} />
+            {shown.name}
+          </DialogTitle>
+          <DialogDescription>{formatINR(shown.totalMinor)} spent this month</DialogDescription>
+        </DialogHeader>
+
+        {active ? (
+          <TransactionList key={active.name} slice={active} from={from} to={to} />
+        ) : (
+          <ul className="divide-border -mx-1 flex max-h-[60vh] flex-col divide-y overflow-y-auto">
+            {slice.children?.map((c) => (
+              <li key={c.categoryId}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDrill({
+                      name: c.name,
+                      totalMinor: c.totalMinor,
+                      categoryIds: [c.categoryId],
+                    })
+                  }
+                  className="hover:bg-muted flex w-full items-center justify-between gap-3 rounded-lg px-1 py-3 text-left"
+                >
+                  <span className="truncate text-sm font-medium">{c.name}</span>
+                  <span className="flex shrink-0 items-center gap-1 text-sm font-semibold tabular-nums">
+                    {formatINR(c.totalMinor)}
+                    <ChevronRightIcon className="text-muted-foreground size-4" />
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TransactionList({ slice, from, to }: { slice: DonutSlice; from: string; to: string }) {
   const [rows, setRows] = useState<CategoryTransaction[] | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -196,45 +262,36 @@ function CategoryTransactionsDialog({
     };
   }, [slice, from, to]);
 
+  if (failed) {
+    return (
+      <p className="text-destructive py-6 text-center text-sm">Could not load transactions.</p>
+    );
+  }
+  if (rows === null) {
+    return <p className="text-muted-foreground py-6 text-center text-sm">Loading…</p>;
+  }
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="size-3 rounded-full" style={{ background: color }} />
-            {slice.name}
-          </DialogTitle>
-          <DialogDescription>
-            {formatINR(slice.totalMinor)} spent this month
-            {rows ? ` · ${rows.length} transaction${rows.length === 1 ? "" : "s"}` : ""}
-          </DialogDescription>
-        </DialogHeader>
-
-        {failed ? (
-          <p className="text-destructive py-6 text-center text-sm">Could not load transactions.</p>
-        ) : rows === null ? (
-          <p className="text-muted-foreground py-6 text-center text-sm">Loading…</p>
-        ) : (
-          <ul className="divide-border -mx-1 flex max-h-[60vh] flex-col divide-y overflow-y-auto">
-            {rows.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-3 px-1 py-3">
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate text-sm font-medium">
-                    {t.note || t.categoryName || "Expense"}
-                  </span>
-                  <span className="text-muted-foreground text-xs">
-                    {dayLabel.format(new Date(`${t.occurredOn}T00:00:00`))}
-                    {slice.categoryIds.length > 1 && t.categoryName ? ` · ${t.categoryName}` : ""}
-                  </span>
-                </span>
-                <span className="shrink-0 text-sm font-semibold tabular-nums">
-                  {formatINR(t.amountMinor)}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </DialogContent>
-    </Dialog>
+    <>
+      <p className="text-muted-foreground -mt-2 text-xs">
+        {rows.length} transaction{rows.length === 1 ? "" : "s"}
+      </p>
+      <ul className="divide-border -mx-1 flex max-h-[60vh] flex-col divide-y overflow-y-auto">
+        {rows.map((t) => (
+          <li key={t.id} className="flex items-center justify-between gap-3 px-1 py-3">
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-medium">
+                {t.note || t.categoryName || "Expense"}
+              </span>
+              <span className="text-muted-foreground text-xs">
+                {dayLabel.format(new Date(`${t.occurredOn}T00:00:00`))}
+              </span>
+            </span>
+            <span className="shrink-0 text-sm font-semibold tabular-nums">
+              {formatINR(t.amountMinor)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }
