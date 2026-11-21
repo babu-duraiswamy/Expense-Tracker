@@ -1,5 +1,7 @@
+import { MicIcon } from "lucide-react";
+
 /**
- * Siri-style full-screen indicator shown while the mic is listening or a voice
+ * Full-screen indicator shown while the mic is listening or a voice
  * command is being processed. Purely visual; the animations live in globals.css.
  */
 export function VoiceOrb({
@@ -16,9 +18,11 @@ export function VoiceOrb({
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-10 bg-black/50 backdrop-blur-md"
     >
       <div className="voice-orb" data-state={state} aria-hidden>
-        <span className="voice-orb-blob voice-orb-blob-a" />
-        <span className="voice-orb-blob voice-orb-blob-b" />
-        <span className="voice-orb-blob voice-orb-blob-c" />
+        <span className="voice-orb-ring" />
+        <span className="voice-orb-ring" />
+        <span className="voice-orb-ring" />
+        <span className="voice-orb-arc" />
+        <MicIcon className="size-10" />
       </div>
       <p className="text-lg font-medium text-white">
         {state === "listening" ? "Listening…" : "Working on it…"}
